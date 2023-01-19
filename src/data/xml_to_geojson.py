@@ -20,8 +20,17 @@ save_destination = '/Users/alexandrasmith/Desktop/Workspace/Projects/masters/dat
 # # Verify only .xml files left (182 cases)
 # print(f'Number of xml files: {len(xml_files)}')
 
-
 def to_geojson(data_dest, save_dest):
+    ''' 
+    Function to convert given .xml files into .geojson format files.
+    ---------
+    Paramters:
+    data_dest (str): path for folder containing xml files
+    save_dest (str): path for where to save geojson files
+    ---------
+    Returns:
+    None
+    '''
     for file in os.listdir(data_dest):
         points = []
         features = []
@@ -43,7 +52,7 @@ def to_geojson(data_dest, save_dest):
                         y_point = float(np.int32(np.float64(Vertex.attrib['Y'])))
                         points.append([x_point, y_point])
                     # Ensure that polygon produced is in closed form 
-                    # i.e having same start and end point
+                    # i.e have same start and end point
                     starting_point = points[0]
                     if starting_point != points[-1]:
                         points.append(starting_point)
