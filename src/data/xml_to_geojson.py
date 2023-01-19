@@ -14,7 +14,7 @@ def to_geojson(data_dest, save_dest):
     save_dest (str): path for where to save geojson files
     ---------
     Returns:
-    -
+    None
     '''
     for file in os.listdir(data_dest):
         points = []
