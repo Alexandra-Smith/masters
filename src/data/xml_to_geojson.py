@@ -9,7 +9,7 @@ def to_geojson(data_dest, save_dest):
     ''' 
     Function to convert given .xml files into .geojson format files.
     ---------
-    Paramters:
+    Parameters:
     data_dest (str): path for folder containing xml files
     save_dest (str): path for where to save geojson files
     ---------
