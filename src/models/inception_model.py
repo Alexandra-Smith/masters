@@ -6,6 +6,14 @@ import torchvision.models as models
 import time
 import copy
 
+# Load the dataset
+
+# Define variables
+NUM_CLASSES=3 #background, normal, malignant
+BATCH_SIZE=32
+NUM_EPOCHS=20
+FEATURE_EXTRACT=True
+
 # Define helper functions
 def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_inception=False):
     '''
@@ -103,8 +111,37 @@ def set_parameter_requires_grad(model, feature_extracting):
         for param in model.parameters():
             param.requires_grad = False
 
+def initialize_model(num_classes, feature_extract, use_pretrained=True):
+    """ Initialise Inception v3
+    Be careful, expects (299,299) sized images and has auxiliary output
+    """
+    model_ft = models.inception_v3(pretrained=use_pretrained)
+    set_parameter_requires_grad(model_ft, feature_extract)
+    # Handle the auxilary net
+    num_ftrs = model_ft.AuxLogits.fc.in_features
+    model_ft.AuxLogits.fc = nn.Linear(num_ftrs, num_classes)
+    # Handle the primary net
+    num_ftrs = model_ft.fc.in_features
+    model_ft.fc = nn.Linear(num_ftrs, num_classes)
+    input_size = 299
 
-# wandb.init(name="run_name", project="masters")
+    return model_ft, input_size
+
+
+# Set device to run training on GPU or CPU
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Initialize the model for this run
+model_ft, input_size = initialize_model(NUM_CLASSES, FEATURE_EXTRACT, use_pretrained=True)
+
+# Print the model we just instantiated
+print(model_ft)
+print("Done")
+
+# inception_v3 = models.inception_v3(pretrained=True)
+
+# Initialise new run in wandb database
+# wandb.init(name="run_name", project="masters", notes="Test run 1", entity='')
 
 # # Capture a dictionary of hyperparameters with config
 # wandb.config = {
