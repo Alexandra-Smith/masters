@@ -1,7 +1,9 @@
 from initialise_models import *
 from train_model import *
 from predict_model import *
-from ..data.preprocessing import *
+import sys
+sys.path.append('/Users/alexandrasmith/Desktop/Workspace/Projects/masters/src/')
+from data.preprocessing import *
 
 
 # Initialise new run on W&B
@@ -15,6 +17,8 @@ PATCH_SIZE = 299
 # Load data
 files = 
 file_codes = 
+all_patches = torch.empty((0, 3, PATCH_SIZE, PATCH_SIZE)) # initialise empty tensors to concatenate
+all_gt_patches = torch.empty((0, PATCH_SIZE, PATCH_SIZE))
 for file_name in files:
     # Get image and corresponding segmentation mask for each patient
     image = 
@@ -23,11 +27,14 @@ for file_name in files:
     patches = image_to_patches()
     # create patches for segmentation masks
     mask_patches = image_to_patches()
+    # get rid of background patches
+    tissue_patches, gt_patches = discard_background_patches(patches, mask_patches, PATCH_SIZE)
+    # concatenate all patches from all images together
+    all_patches = torch.cat(all_patches, tissue_patches); all_gt_patches = torch.cat(all_gt_patches, gt_patches)
+
 # Get labels
 # todo: finish this function
-labels = get_patch_labels(mask_patches)
-
-# todo: before model training, get example visual to confirm patches extracted correctly
+labels = get_patch_labels(all_gt_patches)
 
 # Define model variable
 NUM_EPOCHS = 20
