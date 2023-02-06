@@ -47,6 +47,15 @@ def load_data(patch_size, stride, num_classes):
         # Extract patches
         patches = image_to_patches(slide, patch_size, stride)
 
+def scale_tensor(tensor):
+    '''
+    Scale a tensor to the range [0, 1]
+    '''
+    minn = tensor.min()
+    maxx = tensor.max()
+    tensor = (tensor - minn)/(maxx - minn)
+    tensor = torch.clamp(tensor, 0, 1)
+    return tensor
 
 def image_to_patches(image, patch_size: int, stride: int):
     '''
@@ -62,6 +71,8 @@ def image_to_patches(image, patch_size: int, stride: int):
     '''
     # Convert image to PyTorch tensor
     im = torch.from_numpy(image)
+    im = scale_tensor(im)
+    print("image scaled")
 
     # Is image colour or binary?
     image_dimension = 3 if len(image.shape) == 3 else 1
