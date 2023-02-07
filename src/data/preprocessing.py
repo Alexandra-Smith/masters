@@ -4,7 +4,7 @@ import numpy as np
 from openslide import open_slide
 from PIL import Image
 
-def load_data(patch_size, stride, num_classes):
+def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_classes):
     '''
     Function to load in data, apply any preprocessing steps,
     extract patches, and get corresponding labels.
@@ -18,26 +18,23 @@ def load_data(patch_size, stride, num_classes):
     labels: list of corresponding patch labels
     '''
 
-    SVS_DIR='/Users/alexandrasmith/Desktop/Workspace/Projects/masters/data/raw/svs_files/'
-    MASK_DIR='/Users/alexandrasmith/Desktop/Workspace/Projects/masters/data/interim/masks/'
-
-    svs_files = os.listdir(SVS_DIR)
+    svs_files = os.listdir(images_directory)
     # Get file codes (IDs)
     file_codes = []
     for file in svs_files:
-        name = file.replace(SVS_DIR, '').replace('.svs', '')
+        name = file.replace(images_directory, '').replace('.svs', '')
         file_codes.append(name)
     
     for code in file_codes:
         # LOAD SVS FILES
-        file = SVS_DIR + code + '.svs'
+        file = images_directory + code + '.svs'
         sld = open_slide(file)
         slide_props = sld.properties
         slide_width = int(slide_props['openslide.level[1].width']); slide_height = int(slide_props['openslide.level[1].height']) # dimensions at 10X magnification
         slide = np.array(sld.get_thumbnail(size=(slide_width, slide_height)))
 
         # LOAD SEGMENTATION MASKS
-        mask_file = MASK_DIR + code + '.png'
+        mask_file = gt_directory + code + '.png'
         mask = np.array(Image.open(mask_file))
         mask = mask[:slide_height, :slide_width] # reshape mask file to be same size as SVS
 
@@ -46,8 +43,22 @@ def load_data(patch_size, stride, num_classes):
 
         # Extract patches
         patches = image_to_patches(slide, patch_size, stride)
+        # create patches for segmentation masks
+        mask_patches = image_to_patches(mask, patch_size, stride)
+        # get rid of background patches
+        tissue_patches, gt_patches = discard_background_patches(patches, mask_patches, patch_size)
+        # concatenate all patches from all images together
+        # * may have to use .unsqueeze() here as well
+        # todo: test this out
+        all_patches = torch.cat((all_patches, tissue_patches), dim=0); all_gt_patches = torch.cat((all_gt_patches, gt_patches), dim=0)
 
-def scale_tensor(tensor):
+    # Get labels
+    labels = get_patch_labels(all_gt_patches, patch_size)
+    
+    return all_patches, labels
+
+
+def scale_tensor(tensor: torch.Tensor):
     '''
     Scale a tensor to the range [0, 1]
     '''
@@ -71,8 +82,8 @@ def image_to_patches(image, patch_size: int, stride: int):
     '''
     # Convert image to PyTorch tensor
     im = torch.from_numpy(image)
+    # Scale image to [0, 1]
     im = scale_tensor(im)
-    print("image scaled")
 
     # Is image colour or binary?
     image_dimension = 3 if len(image.shape) == 3 else 1
@@ -85,7 +96,6 @@ def image_to_patches(image, patch_size: int, stride: int):
         patches = patches.contiguous().view(-1, image_dimension, patch_size, patch_size) ###.contiguous() ensure tensor is stored in contiguous block of memory which is required for .view()
         # - Can also reshape patches into a 2D tensor, where each row is a flattened patch
         # - patches = patches.contiguous().view(-1, patch_size*patch_size)
-        # todo: figure out the shaping of how to return the patches (remember still have to put all patches from all images together after each image)
     # Working with greyscale image
     else:
         # Extract patches
@@ -95,7 +105,7 @@ def image_to_patches(image, patch_size: int, stride: int):
 
     return patches
 
-def discard_background_patches(svs_patches, mask_patches, patch_size):
+def discard_background_patches(svs_patches, mask_patches, patch_size: int):
     '''
     Given a set of patches, discard the patches that are determined to be
     majority background - and therefore will be ignored.
@@ -110,13 +120,28 @@ def discard_background_patches(svs_patches, mask_patches, patch_size):
     tissue_patches: List of patches containing tissue
     seg_patches: List of the corresponding segmentation patches
     '''
-    
-    # todo: complete this function
 
-    # for patch in svs_patches:
+    total_num_patches = mask_patches.shape[0]
+    total_px = patch_size*patch_size
+    tissue_patches = torch.empty((0, 3, patch_size, patch_size))
+    seg_patches = torch.empty((0, patch_size, patch_size))
 
+    for i in range(total_num_patches):
+        # Get patch (torch tensor)
+        im_patch = svs_patches[i, :, :, :]
+        mask_patch = mask_patches[i, :, :]
+        # Convert to numpy array
+        p = mask_patch.numpy()
+        # Number of black pixels
+        nblack_px = np.sum(p == 0)
+        # Calculate % of background (black) pixels
+        background_percentage = nblack_px/total_px
+        # Keep patch if background < 80% of the patch (i.e patch contains > 80% tissue), otherwise discard it
+        if background_percentage < 0.8:
+            tissue_patches = torch.cat((tissue_patches, im_patch.unsqueeze(0)), dim=0)
+            seg_patches = torch.cat((seg_patches, mask_patch.unsqueeze(0)), dim=0)
 
-    # return tissue_patches, seg_patches
+    return tissue_patches, seg_patches
 
 def get_patch_labels(patches, patch_size):
     '''
@@ -126,28 +151,26 @@ def get_patch_labels(patches, patch_size):
     patches: List of patches from segmentation masks
 
     Returns:
-    List of labels
+    List of labels, where 0 = normal tissue and 1 = carcinoma
     '''
-    
-    # todo: complete this function
+
+    total_num_patches = patches.shape[0]
+    total_px = patch_size*patch_size
 
     labels = []
-    # Get total number of pixels
-    total_px = patch_size*patch_size
-    for patch in patches:
-        p = np.array(patch)
-        # todo: scale patch to [0, 1]
-        # Number of black pixels
-        nblack = patch[np.where(patch==0)].sum()
-        # Number of white pixels
-        nwhite = patch[np.where(patch==1)].sum()
-
-        # Calculate % of background (black) pixels
-        background_percentage = nblack/total_px
-
-        
-        # if background_percentage < 0.5:
-
-
-
-    # return labels
+    for i in range(total_num_patches):
+        # Get patch (torch tensor)
+        patch = patches[i, :, :]
+        # Convert to numpy array
+        p = patch.numpy()
+        # Calculate number of black pixels in patch
+        nwhite_px = np.sum(p == 1)
+        # Calculate % of white pixels == tumourous pixels
+        tumour_percentage = nwhite_px/total_px
+        # Patch is considered to be labelled tumourous (1) if > 80% of the tissue in the patch is tumourous, otherwise it is labelled as normal tissue (0)
+        if tumour_percentage > 0.8:
+            labels.append(1)
+        else:
+            labels.append(0)
+    
+    return labels

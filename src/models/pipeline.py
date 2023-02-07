@@ -30,7 +30,9 @@ for file_name in files:
     # get rid of background patches
     tissue_patches, gt_patches = discard_background_patches(patches, mask_patches, PATCH_SIZE)
     # concatenate all patches from all images together
-    all_patches = torch.cat(all_patches, tissue_patches); all_gt_patches = torch.cat(all_gt_patches, gt_patches)
+    
+    # * may have to use .unsqueeze() here as well
+    all_patches = torch.cat((all_patches, tissue_patches), dim=0); all_gt_patches = torch.cat((all_gt_patches, gt_patches), dim=0)
 
 # Get labels
 # todo: finish this function
