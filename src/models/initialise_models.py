@@ -10,7 +10,7 @@ def initialise_inceptionv3_model(num_classes: int, learning_rate, momentum):
     # Define model
     model = models.inception_v3(pretrained=True)
 
-    # Replace the final layer of the model with a single output node
+    # Modify final fully connected layer to have 'num_classes' output classes
     model.fc = nn.Linear(model.fc.in_features, num_classes)
 
     # Freeze the parameters of the model to prevent backpropagation through them (all layers except for final fully connected layer)

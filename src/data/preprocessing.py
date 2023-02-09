@@ -19,21 +19,27 @@ def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_
     '''
 
     svs_files = os.listdir(images_directory)
+
+    all_patches = torch.empty((0, 3, patch_size, patch_size))
+    all_gt_patches = torch.empty((0, patch_size, patch_size))
+
     # Get file codes (IDs)
     file_codes = []
     for file in svs_files:
         name = file.replace(images_directory, '').replace('.svs', '')
         file_codes.append(name)
     
+    i = 1
     for code in file_codes:
-        # LOAD SVS FILES
+
+        # LOAD SVS FILE
         file = images_directory + code + '.svs'
         sld = open_slide(file)
         slide_props = sld.properties
         slide_width = int(slide_props['openslide.level[1].width']); slide_height = int(slide_props['openslide.level[1].height']) # dimensions at 10X magnification
         slide = np.array(sld.get_thumbnail(size=(slide_width, slide_height)))
 
-        # LOAD SEGMENTATION MASKS
+        # LOAD SEGMENTATION MASK
         mask_file = gt_directory + code + '.png'
         mask = np.array(Image.open(mask_file))
         mask = mask[:slide_height, :slide_width] # reshape mask file to be same size as SVS
@@ -48,14 +54,16 @@ def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_
         # get rid of background patches
         tissue_patches, gt_patches = discard_background_patches(patches, mask_patches, patch_size)
         # concatenate all patches from all images together
-        # * may have to use .unsqueeze() here as well
-        # todo: test this out
         all_patches = torch.cat((all_patches, tissue_patches), dim=0); all_gt_patches = torch.cat((all_gt_patches, gt_patches), dim=0)
+        
+        # Keep track of processed files
+        print(f"Completed processing {i}/{len(file_codes)}")
+        i += 1
 
     # Get labels
-    labels = get_patch_labels(all_gt_patches, patch_size)
+    all_labels = get_patch_labels(all_gt_patches, patch_size)
     
-    return all_patches, labels
+    return all_patches, all_labels
 
 
 def scale_tensor(tensor: torch.Tensor):
@@ -173,4 +181,7 @@ def get_patch_labels(patches, patch_size):
         else:
             labels.append(0)
     
+    # Convert to PyTorch tensor format
+    labels = torch.tensor(labels, dtype=torch.long)
+
     return labels
