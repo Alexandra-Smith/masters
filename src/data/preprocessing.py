@@ -142,20 +142,32 @@ def discard_background_patches(svs_patches, mask_patches, patch_size: int):
     tissue_patches = torch.empty((0, 3, patch_size, patch_size))
     seg_patches = torch.empty((0, patch_size, patch_size))
 
+    # Method from Coudray et al.
     for i in range(total_num_patches):
         # Get patch (torch tensor)
         im_patch = svs_patches[i, :, :, :]
         mask_patch = mask_patches[i, :, :]
         # Convert to numpy array
-        p = mask_patch.numpy()
-        # Number of black pixels
-        nblack_px = np.sum(p == 0)
-        # Calculate % of background (black) pixels
-        background_percentage = nblack_px/total_px
-        # Keep patch if background < 80% of the patch (i.e patch contains > 80% tissue), otherwise discard it
-        if background_percentage < 0.8:
-            tissue_patches = torch.cat((tissue_patches, im_patch.unsqueeze(0)), dim=0)
-            seg_patches = torch.cat((seg_patches, mask_patch.unsqueeze(0)), dim=0)
+        p = im_patch.numpy()
+        # Determine slides with low amount of information (>50% covered in background)
+        # i.e. all values below 220 in RGB colour space
+        
+
+    # FIRST METHOD TRIED
+    # for i in range(total_num_patches):
+    #     # Get patch (torch tensor)
+    #     im_patch = svs_patches[i, :, :, :]
+    #     mask_patch = mask_patches[i, :, :]
+    #     # Convert to numpy array
+    #     p = mask_patch.numpy()
+    #     # Number of black pixels
+    #     nblack_px = np.sum(p == 0)
+    #     # Calculate % of background (black) pixels
+    #     background_percentage = nblack_px/total_px
+    #     # Keep patch if background < 80% of the patch (i.e patch contains > 80% tissue), otherwise discard it
+    #     if background_percentage < 0.8:
+    #         tissue_patches = torch.cat((tissue_patches, im_patch.unsqueeze(0)), dim=0)
+    #         seg_patches = torch.cat((seg_patches, mask_patch.unsqueeze(0)), dim=0)
 
     return tissue_patches, seg_patches
 
