@@ -13,7 +13,7 @@ STRIDE=PATCH_SIZE ### non-overlapping patches
 
 NUM_CLASSES=2
 
-# Your preprocessed tensor
+# Preprocess data
 patches, labels = load_data(SVS_DIR, MASK_DIR, PATCH_SIZE, STRIDE, NUM_CLASSES)
 
 # Save data

@@ -3,6 +3,7 @@ import os
 import numpy as np
 from openslide import open_slide
 from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
 
 def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_classes):
     '''
@@ -26,10 +27,13 @@ def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_
     # Get file codes (IDs)
     file_codes = []
     for file in svs_files:
+        if file.endswith('.DS_Store'):
+            continue
         name = file.replace(images_directory, '').replace('.svs', '')
         file_codes.append(name)
     
     i = 1
+    print("Starting processing")
     for code in file_codes:
 
         # LOAD SVS FILE
@@ -38,21 +42,26 @@ def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_
         slide_props = sld.properties
         slide_width = int(slide_props['openslide.level[1].width']); slide_height = int(slide_props['openslide.level[1].height']) # dimensions at 10X magnification
         slide = np.array(sld.get_thumbnail(size=(slide_width, slide_height)))
+        print("Done: loading svs")
 
         # LOAD SEGMENTATION MASK
         mask_file = gt_directory + code + '.png'
         mask = np.array(Image.open(mask_file))
         mask = mask[:slide_height, :slide_width] # reshape mask file to be same size as SVS
+        print("Done: loading mask")
 
         if slide_height != mask.shape[0] or slide_width != mask.shape[1]:
             raise Exception("Input SVS file and segmentation image do not have the same dimensions")
 
         # Extract patches
         patches = image_to_patches(slide, patch_size, stride)
+        print("Done: extracting svs patches")
         # create patches for segmentation masks
         mask_patches = image_to_patches(mask, patch_size, stride)
+        print("Done: extracting mask patches")
         # get rid of background patches
         tissue_patches, gt_patches = discard_background_patches(patches, mask_patches, patch_size)
+        print("Done: discarding background patches")
         # concatenate all patches from all images together
         all_patches = torch.cat((all_patches, tissue_patches), dim=0); all_gt_patches = torch.cat((all_gt_patches, gt_patches), dim=0)
         
@@ -64,7 +73,6 @@ def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_
     all_labels = get_patch_labels(all_gt_patches, patch_size)
     
     return all_patches, all_labels
-
 
 def scale_tensor(tensor: torch.Tensor):
     '''
