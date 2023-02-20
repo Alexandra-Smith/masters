@@ -32,7 +32,7 @@ def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_
         name = file.replace(images_directory, '').replace('.svs', '')
         file_codes.append(name)
     
-    i = 1
+    i = 1 # Keeping track of files completed
     print("Starting processing")
     for code in file_codes:
 
@@ -57,12 +57,15 @@ def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_
         # Extract patches
         patches = image_to_patches(slide, patch_size, stride)
         print("Done: extracting svs patches")
+        del slide # delete variables to free memory
         # create patches for segmentation masks
         mask_patches = image_to_patches(mask, patch_size, stride)
         print("Done: extracting mask patches")
+        del mask
         # get rid of background patches
         tissue_patches, gt_patches = discard_background_patches(patches, mask_patches, patch_size)
         print("Done: discarding background patches")
+        del patches, mask_patches
         # concatenate all patches from all images together
         all_patches = torch.cat((all_patches, tissue_patches), dim=0); all_gt_patches = torch.cat((all_gt_patches, gt_patches), dim=0)
         

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision.models as models
+# import torchvision.models as models
 
 def initialise_inceptionv3_model(num_classes: int, learning_rate: float, epsilon: float, weight_decay: float, momentum: float):
     '''
@@ -9,7 +9,8 @@ def initialise_inceptionv3_model(num_classes: int, learning_rate: float, epsilon
     '''
     # Define model
     # model = models.inception_v3(pretrained=True)
-    model = torch.hub.load('pytorch/vision', 'inceptionV3', pretrained=True)
+    # model = torch.hub.load('pytorch/vision', 'inception_v3', pretrained=True)
+    model = torch.hub.load('pytorch/vision:v0.10.0', 'inception_v3', pretrained=True)
 
     # Modify final fully connected layer to have 'num_classes' output classes
     model.fc = nn.Linear(model.fc.in_features, num_classes)

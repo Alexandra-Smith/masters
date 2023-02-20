@@ -1,0 +1,22 @@
+{
+    "os": "macOS-12.4-arm64-arm-64bit",
+    "python": "3.8.13",
+    "heartbeatAt": "2023-02-10T17:07:43.258778",
+    "startedAt": "2023-02-10T17:07:41.707910",
+    "docker": null,
+    "cpu_count": 8,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "pipeline.py",
+    "codePath": "src/models/pipeline.py",
+    "git": {
+        "remote": "git@github.com:Alexandra-Smith/masters.git",
+        "commit": "6079048d483fef3fdc1263cc5d5ac45c3d3635d2"
+    },
+    "email": "alexandrasmith0904@gmail.com",
+    "root": "/Users/alexandrasmith/Desktop/Workspace/Projects/masters",
+    "host": "AlexandrasMacBookPro",
+    "username": "alexandrasmith",
+    "executable": "/Users/alexandrasmith/miniforge3/envs/masters/bin/python3"
+}
