@@ -57,7 +57,7 @@ def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_
         # Extract patches
         patches = image_to_patches(slide, patch_size, stride)
         print("Done: extracting svs patches")
-        del slide # delete variables to free memory
+        del slide # delete variables to free memory -- testing
         # create patches for segmentation masks
         mask_patches = image_to_patches(mask, patch_size, stride)
         print("Done: extracting mask patches")
