@@ -42,6 +42,7 @@ def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_
         slide_props = sld.properties
         slide_width = int(slide_props['openslide.level[1].width']); slide_height = int(slide_props['openslide.level[1].height']) # dimensions at 10X magnification
         slide = np.array(sld.get_thumbnail(size=(slide_width, slide_height)))
+        print(f"File: {code}")
         print("Done: loading svs")
 
         # LOAD SEGMENTATION MASK
@@ -143,6 +144,7 @@ def discard_background_patches(svs_patches, mask_patches, patch_size: int):
     seg_patches = torch.empty((0, patch_size, patch_size))
 
     # Method from Coudray et al.
+    print(f"Total patches: {total_num_patches}")
     for i in range(total_num_patches):
         # Get patch (torch tensor)
         im_patch = svs_patches[i, :, :, :]
@@ -150,8 +152,12 @@ def discard_background_patches(svs_patches, mask_patches, patch_size: int):
         # Convert to numpy array
         p = im_patch.numpy()
         # Determine slides with low amount of information (>50% covered in background)
-        # i.e. all values below 220 in RGB colour space
-        
+        # i.e. all values below 210 in RGB colour space
+        avg = np.average(p)*255
+        if avg < 210:
+            tissue_patches = torch.cat((tissue_patches, im_patch.unsqueeze(0)), dim=0)
+            seg_patches = torch.cat((seg_patches, mask_patch.unsqueeze(0)), dim=0)
+        if i%100==0: print(f"{i}/{total_num_patches}") 
 
     # FIRST METHOD TRIED
     # for i in range(total_num_patches):
