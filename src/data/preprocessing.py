@@ -5,7 +5,7 @@ from openslide import open_slide
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
-def load_case(case_code, images_directory, gt_directory, patch_size: int, stride: int, num_classes):
+def load_indv_case(case_code, images_directory, gt_directory, patch_size: int, stride: int, num_classes):
     '''
     Function to load in ONE image, apply preprocessing steps,
     extract patches and get the corresponing patch labels.
