@@ -5,6 +5,44 @@ from openslide import open_slide
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
+def load_case(case_code, images_directory, gt_directory, patch_size: int, stride: int, num_classes):
+    '''
+    Function to load in ONE image, apply preprocessing steps,
+    extract patches and get the corresponing patch labels.
+
+    Returns:
+    patches: all patches extracted from the image that contain sufficient amount of tissue
+    labels: corresponding class labels for all patches
+    '''
+
+    # LOAD SVS FILE
+    file = images_directory + case_code + '.svs'
+    sld = open_slide(file)
+    slide_props = sld.properties
+    slide_width = int(slide_props['openslide.level[1].width']); slide_height = int(slide_props['openslide.level[1].height']) # dimensions at 10X magnification
+    slide = np.array(sld.get_thumbnail(size=(slide_width, slide_height)))
+
+    # LOAD SEGMENTATION MASK
+    mask_file = gt_directory + case_code + '.png'
+    mask = np.array(Image.open(mask_file))
+    mask = mask[:slide_height, :slide_width] # reshape mask file to be same size as SVS
+
+    if slide_height != mask.shape[0] or slide_width != mask.shape[1]:
+        raise Exception("Input SVS file and segmentation image do not have the same dimensions")
+
+    # extract patches
+    patches = image_to_patches(slide, patch_size, stride)
+    # create patches for segmentation masks
+    mask_patches = image_to_patches(mask, patch_size, stride)
+    # get rid of background patches
+    patches, gt_patches = discard_background_patches(patches, mask_patches, patch_size)
+
+    # Get labels
+    labels = get_patch_labels(gt_patches, patch_size)
+    
+    return patches, labels
+
+
 def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_classes):
     '''
     Function to load in data, apply any preprocessing steps,
@@ -57,15 +95,12 @@ def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_
         # Extract patches
         patches = image_to_patches(slide, patch_size, stride)
         print("Done: extracting svs patches")
-        del slide # delete variables to free memory -- testing
         # create patches for segmentation masks
         mask_patches = image_to_patches(mask, patch_size, stride)
         print("Done: extracting mask patches")
-        del mask
         # get rid of background patches
         tissue_patches, gt_patches = discard_background_patches(patches, mask_patches, patch_size)
         print("Done: discarding background patches")
-        del patches, mask_patches
         # concatenate all patches from all images together
         all_patches = torch.cat((all_patches, tissue_patches), dim=0); all_gt_patches = torch.cat((all_gt_patches, gt_patches), dim=0)
         
