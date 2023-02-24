@@ -1,5 +1,6 @@
 import torch
 import os
+import pandas as pd
 import numpy as np
 from openslide import open_slide
 from PIL import Image
@@ -9,6 +10,7 @@ def load_indv_case(case_code, images_directory, gt_directory, patch_size: int, s
     '''
     Function to load in ONE image, apply preprocessing steps,
     extract patches and get the corresponing patch labels.
+    Also captures specific information about each slide, to be written to a database.
 
     Returns:
     patches: all patches extracted from the image that contain sufficient amount of tissue
@@ -35,13 +37,37 @@ def load_indv_case(case_code, images_directory, gt_directory, patch_size: int, s
     # create patches for segmentation masks
     mask_patches = image_to_patches(mask, patch_size, stride)
     # get rid of background patches
-    patches, gt_patches = discard_background_patches(patches, mask_patches, patch_size)
+    tissue_patches, gt_patches = discard_background_patches(patches, mask_patches, patch_size)
 
     # Get labels
     labels = get_patch_labels(gt_patches, patch_size)
-    
-    return patches, labels
 
+    # create dataframe to capture data information
+    df_data = []
+    col_names = ['File_name', 'Level0_factor', 'Level1_factor', 'Level2_factor', 'Level3_factor', 'Level0_height', 'Level0_width',
+                'Level1_height', 'Level1_width', 'Level2_height', 'Level2_width', 'Level3_height', 'Level3_width',
+                'Patch_size', 'Stride', 'Total_num_of_patches', 'Num_of_patches_discarded', '%_of_benign_tiles','%_of_tumourous_tiles']
+    levels = len(sld.level_dimensions) # get num of levels
+    if levels > 4:
+        raise Exception("More than 4 levels contained in this svs file")
+    factors = np.array(sld.level_downsamples)
+    # start row
+    data = [case_code.split('.')[0]] # first entry is the file name
+    for r in range(levels):
+        data.append(factors[r]) # add all downsample factors for each level
+    total_num_patches = patches.shape[0]
+    num_discarded_patches = total_num_patches - tissue_patches.shape[0]
+    percentage_benign = (torch.sum(torch.eq(labels, 0))/len(labels)).item() * 100
+    percentage_tumourous = (torch.sum(torch.eq(labels, 1))/len(labels)).item() * 100
+    data.extend([slide_props['openslide.level[0].height'], slide_props['openslide.level[0].width'], 
+                slide_props['openslide.level[1].height'], slide_props['openslide.level[1].width'],
+                slide_props['openslide.level[2].height'], slide_props['openslide.level[2].width'],
+                slide_props['openslide.level[3].height'], slide_props['openslide.level[3].width'],
+                patch_size, stride, total_num_patches, num_discarded_patches, percentage_benign, percentage_tumourous])
+    df_data.append(data)
+    df = pd.DataFrame(df_data, columns=col_names)
+    
+    return tissue_patches, labels, df
 
 def load_data(images_directory, gt_directory, patch_size: int, stride: int, num_classes):
     '''
@@ -235,7 +261,7 @@ def get_patch_labels(patches, patch_size):
         patch = patches[i, :, :]
         # Convert to numpy array
         p = patch.numpy()
-        # Calculate number of black pixels in patch
+        # Calculate number of white pixels in patch
         nwhite_px = np.sum(p == 1)
         # Calculate % of white pixels == tumourous pixels
         tumour_percentage = nwhite_px/total_px
