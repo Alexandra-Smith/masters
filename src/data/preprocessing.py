@@ -6,6 +6,7 @@ from openslide import open_slide
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
+# troubleshooting function
 def LOAD(case_code, images_directory, gt_directory, patch_size: int, stride: int, num_classes):
     '''
     Function to load in ONE image, apply preprocessing steps,
@@ -18,6 +19,7 @@ def LOAD(case_code, images_directory, gt_directory, patch_size: int, stride: int
     '''
 
     # LOAD SVS FILE
+    print("Loading file")
     file = images_directory + case_code + '.svs'
     sld = open_slide(file)
     slide_props = sld.properties
@@ -77,6 +79,64 @@ def LOAD(case_code, images_directory, gt_directory, patch_size: int, stride: int
     
     # return tissue_patches, labels, df
     return patches
+
+def load_gts(gt_directory, patch_size: int, stride: int, save_directory):
+
+    files = os.listdir(gt_directory)
+
+    # Get file codes (IDs)
+    full_codes = []
+    for file in files:
+        if file.endswith('.DS_Store'):
+            continue
+        name = file.replace(gt_directory, '').replace('.png', '')
+        if name.startswith('._'):
+            name = name.replace('._', '')
+        full_codes.append(name)
+
+    for code in full_codes:
+
+        # LOAD SEGMENTATION MASK
+        mask_file = gt_directory + code + '.png'
+        mask = np.array(Image.open(mask_file))
+
+        # Extract patches for segmentation masks
+        mask_patches = image_to_patches(mask, patch_size, stride)
+
+        del mask
+
+        # get rid of background patches
+        indices, gt_patches = discard_background_patches_w_indices(mask_patches, patch_size)
+
+        total_num_patches = mask_patches.shape[0]
+        total_patches_left = gt_patches.shape[0]
+        
+        del mask_patches
+
+        # Get labels
+        labels = get_patch_labels(gt_patches, patch_size)
+
+        # Save data
+        torch.save(gt_patches, save_directory + 'gt_patches/' + code.split('.')[0] + '.pt')
+        torch.save(labels, save_directory + 'labels/' + code.split('.')[0] + '.pt')
+        torch.save(indices, save_directory + 'patch_indices/' + code.split('.')[0] + '.pt')
+
+        del gt_patches
+        del indices
+
+        # create dataframe to capture data information
+        df_data = []
+        col_names = ['File_name', 'Patch_size', 'Stride', 'Total_num_of_patches', 'Num_of_patches_discarded', '%_of_benign_tiles','%_of_tumourous_tiles']
+        # start row
+        data = [code.split('.')[0]] # first entry is the file name
+        num_discarded_patches = total_num_patches - total_patches_left
+        percentage_benign = (torch.sum(torch.eq(labels, 0))/len(labels)).item() * 100
+        percentage_tumourous = (torch.sum(torch.eq(labels, 1))/len(labels)).item() * 100
+        data.extend([patch_size, stride, total_num_patches, num_discarded_patches, percentage_benign, percentage_tumourous])
+        df_data.append(data)
+        df = pd.DataFrame(df_data, columns=col_names)
+        # df.to_csv(save_directory + 'info_00.csv')
+        df.to_csv(save_directory + 'info_00.csv', mode='a', header=False)
 
 def load_indv_case(case_code, images_directory, gt_directory, patch_size: int, stride: int, num_classes):
     '''
@@ -248,7 +308,6 @@ def image_to_patches(image, patch_size: int, stride: int):
 
     # Is image colour or binary?
     image_dimension = 3 if len(image.shape) == 3 else 1
-    print("Extracting patches")
     # Working with a colour image
     if image_dimension == 3:
         # Extract patches
@@ -322,6 +381,29 @@ def discard_background_patches(svs_patches, mask_patches, patch_size: int):
         if i%1000==0: print(f"{i}/{total_num_patches}") 
 
     return tissue_patches, seg_patches
+
+def discard_background_patches_w_indices(mask_patches, patch_size: int):
+
+    total_num_patches = mask_patches.shape[0]
+    total_px = patch_size*patch_size
+    seg_patches = torch.empty((0, patch_size, patch_size))
+    inds = []
+
+    for i in range(total_num_patches):
+        # Get patch (torch tensor)
+        mask_patch = mask_patches[i, :, :]
+        # Convert to numpy array
+        p = mask_patch.numpy()
+        # Count number of pixels in different classes
+        nwhite_px = np.sum(p == 1); ngrey_px = np.sum(p == 0.5)
+        # Calculate % of tissue
+        tissue_percentage = (ngrey_px + nwhite_px)/total_px
+        # Keep patch if background < 70% of the patch (i.e patch contains > 70% tissue), otherwise discard it
+        if tissue_percentage > 0.7:
+            inds.append(i)
+            seg_patches = torch.cat((seg_patches, mask_patch.unsqueeze(0)), dim=0)
+
+    return inds, seg_patches
 
 def get_patch_labels(patches, patch_size):
     '''
