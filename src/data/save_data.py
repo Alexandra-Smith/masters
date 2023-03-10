@@ -38,7 +38,8 @@ NUM_CLASSES=2
 # Save data
 SAVE_DEST = '/Volumes/AlexS/MastersData/processed/'
 
-load_gts(MASK_DIR, PATCH_SIZE, STRIDE, SAVE_DEST)
+# load_gts(MASK_DIR, PATCH_SIZE, STRIDE, SAVE_DEST)
+load_svs(SVS_DIR, MASK_DIR, PATCH_SIZE, STRIDE, SAVE_DEST)
 
 # SAVE_DEST__ = '/Users/alexandrasmith/Desktop/Workspace/Projects/masters/data/processed/'
 # torch.save(patches, SAVE_DEST + 'patches/' + case_code.split('.')[0] + '.pt')

@@ -1,9 +1,11 @@
 import torch
 import os
+import sys
 import pandas as pd
 import numpy as np
 from openslide import open_slide
 from PIL import Image
+import itertools
 Image.MAX_IMAGE_PIXELS = None
 
 # troubleshooting function
@@ -137,6 +139,138 @@ def load_gts(gt_directory, patch_size: int, stride: int, save_directory):
         df = pd.DataFrame(df_data, columns=col_names)
         # df.to_csv(save_directory + 'info_00.csv')
         df.to_csv(save_directory + 'info_00.csv', mode='a', header=False)
+
+def load_svs(images_directory, gt_directory, patch_size: int, stride: int, save_directory):
+    
+    files = os.listdir(gt_directory)
+
+    # Get file codes (IDs)
+    full_codes = []
+    for file in files:
+        if file.endswith('.DS_Store'):
+            continue
+        name = file.replace(gt_directory, '').replace('.png', '')
+        if name.startswith('._'):
+            name = name.replace('._', '')
+        full_codes.append(name)
+
+    ii = int(sys.argv[1])
+
+    code = full_codes[ii]
+    if code == 'TCGA-D8-A1J9-01Z-00-DX1.F81FA9EF-8129-4E17-A9AD-2B850782CC18':
+        raise Exception("file already done, go on to next one")
+    print(code)
+    # sys.exit()
+
+     # LOAD SVS FILE
+    file = images_directory + code + '.svs'
+    sld = open_slide(file)
+    slide_props = sld.properties
+    slide_width = int(slide_props['openslide.level[1].width']); slide_height = int(slide_props['openslide.level[1].height']) # dimensions at 10X magnification
+    slide = np.array(sld.get_thumbnail(size=(slide_width, slide_height)))
+    print(slide_width, slide_height)
+    levels = len(sld.level_dimensions) # get num of levels
+    factors = np.array(sld.level_downsamples)
+
+    del sld
+
+    # extract all patches
+    patches = image_to_patches(slide, patch_size, stride)
+    print(patches.shape)
+    del slide
+
+    # keep only tissue patches
+    indices = torch.load('/Volumes/AlexS/MastersData/processed/patch_indices/' + code.split('.')[0] + '.pt')
+    tissue_patches = patches[indices]
+
+    del indices
+    del patches
+
+    # Save data
+    torch.save(tissue_patches, save_directory + 'patches/' + code.split('.')[0] + '.pt')
+
+    del tissue_patches
+
+    # create dataframe to capture data information
+    df_data = []
+    col_names = ['File_name', 'Level0_factor', 'Level1_factor', 'Level2_factor', 'Level3_factor', 'Level0_height', 'Level0_width',
+                'Level1_height', 'Level1_width', 'Level2_height', 'Level2_width', 'Level3_height', 'Level3_width']
+    if levels > 4:
+        raise Exception("More than 4 levels contained in this svs file")
+    # start row
+    data = [code.split('.')[0]] # first entry is the file name
+    for r in range(levels):
+        data.append(factors[r]) # add all downsample factors for each level
+    if levels < 4:
+        data.append(np.nan)
+    if levels < 4:
+        data.extend([slide_props['openslide.level[0].height'], slide_props['openslide.level[0].width'], 
+                slide_props['openslide.level[1].height'], slide_props['openslide.level[1].width'],
+                slide_props['openslide.level[2].height'], slide_props['openslide.level[2].width'], np.nan, np.nan])
+    else:
+        data.extend([slide_props['openslide.level[0].height'], slide_props['openslide.level[0].width'], 
+                slide_props['openslide.level[1].height'], slide_props['openslide.level[1].width'],
+                slide_props['openslide.level[2].height'], slide_props['openslide.level[2].width'],
+                slide_props['openslide.level[3].height'], slide_props['openslide.level[3].width']])
+    df_data.append(data)
+    df = pd.DataFrame(df_data, columns=col_names)
+    df.to_csv(save_directory + 'info_01.csv', mode='a', header=False)
+
+    # process 10 at a time
+    # for code in itertools.islice(full_codes, 10):
+    #     # LOAD SVS FILE
+    #     file = images_directory + code + '.svs'
+    #     sld = open_slide(file)
+    #     slide_props = sld.properties
+    #     slide_width = int(slide_props['openslide.level[1].width']); slide_height = int(slide_props['openslide.level[1].height']) # dimensions at 10X magnification
+    #     slide = np.array(sld.get_thumbnail(size=(slide_width, slide_height)))
+
+    #     levels = len(sld.level_dimensions) # get num of levels
+    #     factors = np.array(sld.level_downsamples)
+
+    #     del sld
+
+    #     # extract all patches
+    #     patches = image_to_patches(slide, patch_size, stride)
+
+    #     del slide
+
+    #     # keep only tissue patches
+    #     indices = torch.load('/Volumes/AlexS/MastersData/processed/patch_indices/' + code.split('.')[0] + '.pt')
+    #     tissue_patches = patches[indices]
+
+    #     del indices
+    #     del patches
+
+    #     # Save data
+    #     torch.save(tissue_patches, save_directory + 'patches/' + code.split('.')[0] + '.pt')
+
+    #     del tissue_patches
+
+    #     # create dataframe to capture data information
+    #     df_data = []
+    #     col_names = ['File_name', 'Level0_factor', 'Level1_factor', 'Level2_factor', 'Level3_factor', 'Level0_height', 'Level0_width',
+    #                 'Level1_height', 'Level1_width', 'Level2_height', 'Level2_width', 'Level3_height', 'Level3_width']
+    #     if levels > 4:
+    #         raise Exception("More than 4 levels contained in this svs file")
+    #     # start row
+    #     data = [code.split('.')[0]] # first entry is the file name
+    #     for r in range(levels):
+    #         data.append(factors[r]) # add all downsample factors for each level
+    #     if levels < 4:
+    #         data.append(np.nan)
+    #     if levels < 4:
+    #         data.extend([slide_props['openslide.level[0].height'], slide_props['openslide.level[0].width'], 
+    #                 slide_props['openslide.level[1].height'], slide_props['openslide.level[1].width'],
+    #                 slide_props['openslide.level[2].height'], slide_props['openslide.level[2].width'], np.nan, np.nan])
+    #     else:
+    #         data.extend([slide_props['openslide.level[0].height'], slide_props['openslide.level[0].width'], 
+    #                 slide_props['openslide.level[1].height'], slide_props['openslide.level[1].width'],
+    #                 slide_props['openslide.level[2].height'], slide_props['openslide.level[2].width'],
+    #                 slide_props['openslide.level[3].height'], slide_props['openslide.level[3].width']])
+    #     df_data.append(data)
+    #     df = pd.DataFrame(df_data, columns=col_names)
+    #     df.to_csv(save_directory + 'info_01.csv', mode='a', header=False)
 
 def load_indv_case(case_code, images_directory, gt_directory, patch_size: int, stride: int, num_classes):
     '''
