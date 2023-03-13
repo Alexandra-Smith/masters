@@ -82,28 +82,40 @@ def LOAD(case_code, images_directory, gt_directory, patch_size: int, stride: int
     # return tissue_patches, labels, df
     return patches
 
-def load_gts(gt_directory, patch_size: int, stride: int, save_directory):
+def load_gts(gt_directory, patch_size: int, stride: int, save_directory, start, end):
 
     files = os.listdir(gt_directory)
 
     # Get file codes (IDs)
     full_codes = []
     for file in files:
+        if file.startswith('.'):
+            continue
         if file.endswith('.DS_Store'):
             continue
         name = file.replace(gt_directory, '').replace('.png', '')
         if name.startswith('._'):
             name = name.replace('._', '')
         full_codes.append(name)
-
-    for code in full_codes:
+    
+    for code in itertools.islice(full_codes, start, end):
 
         # LOAD SEGMENTATION MASK
         mask_file = gt_directory + code + '.png'
         mask = np.array(Image.open(mask_file))
 
+        # get svs data for slide dimensions
+        df = pd.read_excel("/Volumes/AlexS/MastersData/processed/svs_data.xlsx", usecols=["B, I, J"])
+        dict = df.set_index('File_name').to_dict('index')
+        slide_height = dict[code.split('.')[0]]['Level1_height']
+        slide_width = dict[code.split('.')[0]]['Level1_width']
+        mask = mask[:slide_height, :slide_width] # reshape mask file to be same size as SVS
+        h, w = mask.shape
+        new_width = w - (w % 256); new_height = h - (h % 256)
+        # crop so that extracting patches doesn't pad the image
+        cropped_mask = mask[:new_height, :new_width]
         # Extract patches for segmentation masks
-        mask_patches = image_to_patches(mask, patch_size, stride)
+        mask_patches = image_to_patches(cropped_mask, patch_size, stride)
 
         del mask
 
@@ -128,17 +140,17 @@ def load_gts(gt_directory, patch_size: int, stride: int, save_directory):
 
         # create dataframe to capture data information
         df_data = []
-        col_names = ['File_name', 'Patch_size', 'Stride', 'Total_num_of_patches', 'Num_of_patches_discarded', '%_of_benign_tiles','%_of_tumourous_tiles']
+        col_names = ['File_name', 'Patch_size', 'Stride', 'Total_num_of_patches', 'Num_of_patches_discarded', 'Num_of_benign_tiles','Num_of_tumourous_tiles']
         # start row
         data = [code.split('.')[0]] # first entry is the file name
         num_discarded_patches = total_num_patches - total_patches_left
-        percentage_benign = (torch.sum(torch.eq(labels, 0))/len(labels)).item() * 100
-        percentage_tumourous = (torch.sum(torch.eq(labels, 1))/len(labels)).item() * 100
-        data.extend([patch_size, stride, total_num_patches, num_discarded_patches, percentage_benign, percentage_tumourous])
+        num_benign = (torch.sum(torch.eq(labels, 0))).item()
+        num_tumourous = (torch.sum(torch.eq(labels, 1))).item()
+        data.extend([patch_size, stride, total_num_patches, num_discarded_patches, num_benign, num_tumourous])
         df_data.append(data)
         df = pd.DataFrame(df_data, columns=col_names)
         # df.to_csv(save_directory + 'info_00.csv')
-        df.to_csv(save_directory + 'info_00.csv', mode='a', header=False)
+        df.to_csv(save_directory + 'patches_info.csv', mode='a', header=False)
 
 def load_svs(images_directory, gt_directory, patch_size: int, stride: int, save_directory):
     
@@ -157,10 +169,6 @@ def load_svs(images_directory, gt_directory, patch_size: int, stride: int, save_
     ii = int(sys.argv[1])
 
     code = full_codes[ii]
-    if code == 'TCGA-D8-A1J9-01Z-00-DX1.F81FA9EF-8129-4E17-A9AD-2B850782CC18':
-        raise Exception("file already done, go on to next one")
-    print(code)
-    # sys.exit()
 
      # LOAD SVS FILE
     file = images_directory + code + '.svs'

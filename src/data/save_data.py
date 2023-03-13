@@ -12,24 +12,21 @@ MASK_DIR='/Volumes/AlexS/MastersData/QupathLabels/export10x/'
 # only use svs files for which a valid mask was obtained
 files = os.listdir(MASK_DIR)
 
-# Get file codes (IDs)
-file_codes = []
-for file in files:
-    if file.startswith('.'):
-        continue
-    if file.endswith('.DS_Store'):
-        continue
-    name = file.replace(MASK_DIR, '').replace('.png', '')
-    file_codes.append(name)
+# # Get file codes (IDs)
+# file_codes = []
+# for file in files:
+    # if file.startswith('.'):
+    #     continue
+#     if file.endswith('.DS_Store'):
+#         continue
+#     name = file.replace(MASK_DIR, '').replace('.png', '')
+#     file_codes.append(name)
 
 # Define variables
 PATCH_SIZE=256
 STRIDE=PATCH_SIZE ### non-overlapping patches
 
 NUM_CLASSES=2
-
-print(len(file_codes))
-
 
 # since = time.time()
 
@@ -42,9 +39,12 @@ print(len(file_codes))
 # patches = LOAD(case_code, SVS_DIR, MASK_DIR, PATCH_SIZE, STRIDE, NUM_CLASSES)
 
 # Save data
-# SAVE_DEST = '/Volumes/AlexS/MastersData/processed/'
+SAVE_DEST = '/Volumes/AlexS/MastersData/processed/'
 
-# load_gts(MASK_DIR, PATCH_SIZE, STRIDE, SAVE_DEST)
+start = 0
+end = 5
+load_gts(MASK_DIR, PATCH_SIZE, STRIDE, SAVE_DEST, start, end)
+
 # load_svs(SVS_DIR, MASK_DIR, PATCH_SIZE, STRIDE, SAVE_DEST)
 
 # SAVE_DEST__ = '/Users/alexandrasmith/Desktop/Workspace/Projects/masters/data/processed/'

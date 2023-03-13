@@ -23,3 +23,5 @@ predictions = np.array(predictions).reshape(height, width)
 
 # Create a heat map image with the final predictions
 heatmap = cv2.applyColorMap(predictions.astype(np.uint8), cv2.COLORMAP_JET)
+
+## ! 50> must be tumorous to be assigned as malignant
