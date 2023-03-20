@@ -41,9 +41,10 @@ NUM_CLASSES=2
 # Save data
 SAVE_DEST = '/Volumes/AlexS/MastersData/processed/'
 
-start = 0
-end = 5
-load_gts(MASK_DIR, PATCH_SIZE, STRIDE, SAVE_DEST, start, end)
+start = int(sys.argv[1])
+end = int(sys.argv[2])
+# load_gts(MASK_DIR, PATCH_SIZE, STRIDE, SAVE_DEST, start, end)
+load_svs(SVS_DIR, MASK_DIR, PATCH_SIZE, STRIDE, SAVE_DEST, start, end)
 
 # load_svs(SVS_DIR, MASK_DIR, PATCH_SIZE, STRIDE, SAVE_DEST)
 
