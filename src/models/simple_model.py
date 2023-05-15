@@ -289,7 +289,7 @@ def main():
     # Initialize the model for this run
     model = initialise_model(num_classes)
     # Print the model we just instantiated
-    print(model)
+    # print(model)
     
     # Set model parameters
     learning_rate = 0.0001
