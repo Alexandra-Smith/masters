@@ -4,12 +4,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+import time
+import os
+import sys
+import copy
 import torchvision
 from torchvision import datasets, models, transforms
 import matplotlib.pyplot as plt
-import time
-import os
-import copy
 from tqdm import tqdm
 from torch.utils.data import Dataset
 import random
@@ -45,6 +46,8 @@ def train_model(model, dataloaders, progress, criterion, optimizer, num_epochs=2
                 
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
+                    if isinstance(outputs, tuple):
+                        outputs = outputs[0] # extract tensor if output is a tuple
                     _, preds = torch.max(outputs, 1)
                     loss = criterion(outputs, labels)
                     
@@ -78,22 +81,31 @@ def train_model(model, dataloaders, progress, criterion, optimizer, num_epochs=2
     return model
 
 def initialise_model(num_classes):
-    # Define the model architecture
-    model = nn.Sequential(
-        nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1),
-        nn.ReLU(),
-        nn.MaxPool2d(kernel_size=2),
-        nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1),
-        nn.ReLU(),
-        nn.MaxPool2d(kernel_size=2),
-        nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1),
-        nn.ReLU(),
-        nn.MaxPool2d(kernel_size=2),
-        nn.Flatten(),
-        nn.Linear(64 * 32 * 32, 512),
-        nn.ReLU(),
-        nn.Linear(512, num_classes),
+    # Define the model architecture  
+    model = torch.hub.load('pytorch/vision:v0.6.0', 'inception_v3', pretrained=True) # pre-trained model
+    # Freeze all parameters
+    for param in model.parameters():
+        param.requires_grad = False
+    
+    # Replace last layers with new layers
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Sequential(
+        nn.Linear(num_ftrs, 2048),
+        nn.ReLU(inplace=True),
+        nn.Dropout(p=0.7),
+        nn.Linear(2048, num_classes),
+        nn.Softmax(dim=1)
     )
+    
+    # Set requires_grad=True for last 5 layers
+    num_layers_to_train = 5
+    ct = 0
+    for name, child in model.named_children():
+        if ct < num_layers_to_train:
+            for param in child.parameters():
+                param.requires_grad = True
+        ct += 1
+    
     return model
 
 # Split image folders into train, val, test
@@ -202,49 +214,49 @@ class CustomDataset(Dataset):
         
         return image, label # Return transformed image and label
 
+# -------------------------------------------------------------------------------
+# ----------------------------------MAIN METHOD----------------------------------
+# -------------------------------------------------------------------------------
+
 def main():
     ##### SET PARAMETERS #####
     # Number of classes in the dataset
     num_classes = 2
     # Batch size for training (change depending on how much memory you have)
-    batch_size = 64
+    batch_size = 32
     # Number of epochs to train for
     num_epochs = 10
     
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
     SEED=42
+    num_cpus=8
     
-    # Initialize the model for this run
-    CNN_model = initialise_model(num_classes)
-
-    # Print the model we just instantiated
-    print(CNN_model)
+    INPUT_SIZE=299
 
     # Initialise data transforms
-    
     data_transforms = {
         'train': transforms.Compose([
-            # transforms.Resize(INPUT_SIZE),
+            transforms.Resize(INPUT_SIZE),
             # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # Initially no colour normalisation
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
         'val': transforms.Compose([
-            # transforms.Resize(INPUT_SIZE),
+            transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
         'test' : transforms.Compose([
-            # transforms.Resize(INPUT_SIZE),
+            transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
     }
     
     # using full set of data
-    img_dir = '../../data/patches/'
-    labels_dir = '../../data/labels/'
+    img_dir = '../../../data/patches/'
+    labels_dir = '../../../data/labels/'
 
     split=[70, 15, 15] # for splitting into train/val/test
 
@@ -266,39 +278,40 @@ def main():
     }
     # Create training, validation and test dataloaders
     dataloaders = {
-        'train': data_utils.DataLoader(image_datasets['train'], batch_size=batch_size, num_workers=4, shuffle=True, drop_last=True),
-        'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=4, shuffle=True),
-        'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=4, shuffle=True)
+        'train': data_utils.DataLoader(image_datasets['train'], batch_size=batch_size, num_workers=num_cpus, shuffle=True, drop_last=True),
+        'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=num_cpus, shuffle=True),
+        'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
     }
 
     # Detect if we have a GPU available
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
+    # Initialize the model for this run
+    model = initialise_model(num_classes)
+    # Print the model we just instantiated
+    print(model)
+    
     # Set model parameters
-    learning_rate = 0.001
-    learning_rate_decay = 0.0000001
+    learning_rate = 0.0001
+    momentum = 0.9
     
     # Send the model to GPU
-    CNN_model = CNN_model.to(device)
+    model = model.to(device)
 
-    optimiser = optim.SGD(CNN_model.parameters(), lr=learning_rate, weight_decay=learning_rate_decay)
-    
+    optimiser = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=learning_rate, momentum=momentum) # selectively update only the parameters that are being fine-tuned
+   
+    # Initialize WandB  run
     wandb.login()
-    
-    model_num = 0.0
-    
-    # Initialize WandB 
     run = wandb.init(
         # Set the project where this run will be logged
         project="masters",
-        notes="Practice run, simple 6-layer CNN",
+        notes=sys.argv[1],
         # Track hyperparameters and run metadata
         config={
             "batch_size": batch_size,
             "learning_rate": learning_rate,
-            "weight_decay": learning_rate_decay,
+            "momentum": momentum,
             "epochs": num_epochs,
-            "model_num": model_num
         })
     progress = {'train': tqdm(total=len(dataloaders['train']), desc="Training progress"), 'val': tqdm(total=len(dataloaders['val']), desc="Validation progress")}
     
@@ -306,10 +319,10 @@ def main():
     criterion = nn.CrossEntropyLoss()
 
     # Train and evaluate
-    CNN_model = train_model(CNN_model, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs)
+    model = train_model(model, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs)
     
     # Save model
-    torch.save(CNN_model.state_dict(), 'model_weights_' + str(model_num) + '.pth')
+    torch.save(model.state_dict(), '../../models/' + str(run.name) + '_model_weights.pth')
 
 if __name__ == '__main__':
     main()
