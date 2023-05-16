@@ -1,16 +1,9 @@
-from __future__ import print_function
-from __future__ import division
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
-import time
 import os
 import sys
-import copy
-import torchvision
-from torchvision import datasets, models, transforms
-import matplotlib.pyplot as plt
+from torchvision import transforms
 from tqdm import tqdm
 from torch.utils.data import Dataset
 import random
@@ -175,7 +168,6 @@ def split_data(patch_directory, split: list, seed):
     return train_cases, val_cases, test_cases
 
 # Create a custom PyTorch dataset to read in your images and apply transforms
-
 class CustomDataset(Dataset):
     def __init__(self, img_folders, label_files, transform=None):
         self.img_folders = img_folders
