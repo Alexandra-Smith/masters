@@ -450,6 +450,7 @@ def discard_background_patches(svs_patches, mask_patches, patch_size: int):
         # background_percentage = nblack_px/total_px
         tissue_percentage = (ngrey_px + nwhite_px)/total_px
         # Keep patch if background < 70% of the patch (i.e patch contains > 70% tissue), otherwise discard it
+        # Important: based on gt patches, and not actual image data !!
         if tissue_percentage > 0.7:
             tissue_patches = torch.cat((tissue_patches, im_patch.unsqueeze(0)), dim=0)
             seg_patches = torch.cat((seg_patches, mask_patch.unsqueeze(0)), dim=0)
@@ -504,7 +505,7 @@ def get_patch_labels(patches, patch_size):
         nwhite_px = np.sum(p == 1)
         # Calculate % of white pixels == tumourous pixels
         tumour_percentage = nwhite_px/total_px
-        # Patch is considered to be labelled tumourous (1) if > 70% of the tissue in the patch is tumourous, otherwise it is labelled as normal tissue (0)
+        # Patch is considered to be labelled tumourous (1) if > 50% of the tissue in the patch is tumourous, otherwise it is labelled as normal tissue (0)
         if tumour_percentage > 0.5:
             labels.append(1)
         else:
