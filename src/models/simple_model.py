@@ -1,3 +1,6 @@
+'''
+TESTING SCRIPT - NO LONGER USED FOR MAIN
+'''
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -10,6 +13,7 @@ import random
 import torch.utils.data as data_utils
 from PIL import Image
 import wandb
+import initialise_models
 
 def train_model(model, dataloaders, progress, criterion, optimizer, num_epochs=25):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -71,34 +75,6 @@ def train_model(model, dataloaders, progress, criterion, optimizer, num_epochs=2
             "Valid Loss": loss_valid,
             "Valid Acc": acc_valid})      
             
-    return model
-
-def initialise_model(num_classes):
-    # Define the model architecture  
-    model = torch.hub.load('pytorch/vision:v0.6.0', 'inception_v3', pretrained=True) # pre-trained model
-    # Freeze all parameters
-    for param in model.parameters():
-        param.requires_grad = False
-    
-    # Replace last layers with new layers
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 2048),
-        nn.ReLU(inplace=True),
-        nn.Dropout(p=0.7),
-        nn.Linear(2048, num_classes),
-        nn.Softmax(dim=1)
-    )
-    
-    # Set requires_grad=True for last 5 layers
-    num_layers_to_train = 5
-    ct = 0
-    for name, child in model.named_children():
-        if ct < num_layers_to_train:
-            for param in child.parameters():
-                param.requires_grad = True
-        ct += 1
-    
     return model
 
 # Split image folders into train, val, test
@@ -215,7 +191,7 @@ def main():
     # Number of classes in the dataset
     num_classes = 2
     # Batch size for training (change depending on how much memory you have)
-    batch_size = 32
+    batch_size = 64
     # Number of epochs to train for
     num_epochs = 10
     
@@ -229,20 +205,20 @@ def main():
     # Initialise data transforms
     data_transforms = {
         'train': transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
+            # transforms.Resize(INPUT_SIZE),
             # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
         'val': transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
+            # transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            transforms.Normalize([0.48/5, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
         'test' : transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
+            # transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
     }
     
@@ -279,7 +255,7 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     # Initialize the model for this run
-    model = initialise_model(num_classes)
+    model, optimiser, criterion = initialise_models.CNN(num_classes)
     # Print the model we just instantiated
     # print(model)
     
@@ -289,8 +265,6 @@ def main():
     
     # Send the model to GPU
     model = model.to(device)
-
-    optimiser = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=learning_rate, momentum=momentum) # selectively update only the parameters that are being fine-tuned
    
     # Initialize WandB  run
     wandb.login()
@@ -306,9 +280,6 @@ def main():
             "epochs": num_epochs,
         })
     progress = {'train': tqdm(total=len(dataloaders['train']), desc="Training progress"), 'val': tqdm(total=len(dataloaders['val']), desc="Validation progress")}
-    
-    # Setup the loss fxn
-    criterion = nn.CrossEntropyLoss()
 
     # Train and evaluate
     model = train_model(model, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs)
