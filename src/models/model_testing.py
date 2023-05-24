@@ -276,16 +276,8 @@ def roc_plot(y_test, predicted_probs):
     plt.plot(ns_fpr, ns_tpr, linestyle='--', label='No Skill')
     plt.plot(fpr, tpr, marker='.', label='Model')
     # axis labels
-<<<<<<< Updated upstream
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    # show the legend
-    plt.legend()
-    # show the plot
-=======
     plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
     plt.legend()
->>>>>>> Stashed changes
     plt.show()
 
 def get_metrics(y_test, predictions):

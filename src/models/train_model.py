@@ -1,3 +1,7 @@
+'''
+Run as:
+train_model.py 'notes about run for wandb'
+'''
 import os
 import sys
 import torch
@@ -189,9 +193,9 @@ def main():
     # Number of classes in the dataset
     num_classes = 2
     # Batch size for training (change depending on how much memory you have)
-    batch_size = 32
+    batch_size = 16
     # Number of epochs to train for
-    num_epochs = 10
+    num_epochs = 25
     
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
@@ -204,26 +208,28 @@ def main():
     # Initialise data transforms
     data_transforms = {
         'train': transforms.Compose([
-            transforms.Resize(INPUT_SIZE), # inception
+            # transforms.Resize(INPUT_SIZE), # inception
             # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
         'val': transforms.Compose([
-            transforms.Resize(INPUT_SIZE), # inception
+            # transforms.Resize(INPUT_SIZE), # inception
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
         'test' : transforms.Compose([
-            transforms.Resize(INPUT_SIZE), # inception
+            # transforms.Resize(INPUT_SIZE), # inception
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
     }
     
     # using full set of data
-    img_dir = '../../data/patches/'
-    labels_dir = '../../data/labels/'
+    # img_dir = '../../data/patches/'
+    # labels_dir = '../../data/labels/'
+    img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
+    labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
 
     split=[70, 15, 15] # for splitting into train/val/test
 
@@ -255,7 +261,7 @@ def main():
     
     scheduler = None
     # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.inception0(num_classes)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.resnet(num_classes)
 
     # Send the model to GPU
     model = model.to(device)
