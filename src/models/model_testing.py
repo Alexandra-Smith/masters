@@ -17,6 +17,10 @@ import wandb
 from PIL import Image
 import seaborn as sns
 import sys
+from sklearn import metrics
+import matplotlib.pyplot as plt
+import json
+from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, ConfusionMatrixDisplay
 
 def load_trained_model(num_classes, model_path): 
 
@@ -229,8 +233,8 @@ def load_data(INPUT_SIZE, SEED, batch_size, num_cpus):
     }
 
     # using full set of data
-    img_dir = '../../data/patches/'
-    labels_dir = '../../data/labels/'
+    img_dir = '/home/21576262@su/masters/data/patches/'
+    labels_dir = '/home/21576262@su/masters/data/labels/'
     # img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
     # labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
 
@@ -261,7 +265,7 @@ def load_data(INPUT_SIZE, SEED, batch_size, num_cpus):
 
     return dataloaders
 
-def roc_plot(y_test, model_probabilities):
+def roc_plot(y_test, model_probabilities, model_name):
     # keep probabilities for the positive outcome only
     predicted_probs = [model_probabilities[i][1] for i in range(len(model_probabilities))]
     # calculate scores
@@ -279,15 +283,17 @@ def roc_plot(y_test, model_probabilities):
     plt.plot(fpr, tpr, color='mediumorchid', marker='.', label='Model')
     # axis labels
     plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
-    plt.legend()
+    plt.legend(
+    plt.title('AUC=%.3f' % (auc_score))
     # plt.show()
-    plt.savefig("../../data/roc1.png")
+    fig_name = 'roc.png'
+    plt.savefig("/home/21576262@su/masters/reports/figures/" + model_name + '/' + fig_name)
 
 def get_metrics(y_test, predictions):
     report = metrics.classification_report(y_test, predictions)
     return report
 
-def plot_confusion_matrix(y_test, predictions):
+def plot_confusion_matrix(y_test, predictions, model_name):
     cm = confusion_matrix(y_test, predictions)
     group_counts = ['{0:0.0f}'.format(value) for value in cm.flatten()]
     group_percentages = ['{0:.2%}'.format(value) for value in cm.flatten()/np.sum(cm)]
@@ -295,13 +301,14 @@ def plot_confusion_matrix(y_test, predictions):
     labels = np.asarray(labels).reshape(2,2)
     sns.heatmap(cm, annot=labels, fmt='', cmap='BuGn')
     plt.title('Confusion Matrix');
-    plt.xlabel('\nPredicted Label')
+    plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
     # disp = ConfusionMatrixDisplay(confusion_matrix=cm)
     # disp.plot(cmap='plasma', values_format='.0f')
     # disp.plot(cmap='PuBuGn', values_format='.2%')
     # plt.show()
-    plt.savefig("../../data/cm.png")
+    fig_name = 'cm.png'
+    plt.savefig("/home/21576262@su/masters/reports/figures/" + model_name + '/' + fig_name)
 
 def main():
     ##### SET PARAMETERS #####
@@ -334,10 +341,19 @@ def main():
 
     metrics = get_metrics(true_labels, model_predictions)
     print(metrics)
-
-    roc_plot(true_labels, model_probabilities)
-
-    plot_confusion_matrix(true_labels, model_probabilities)
+    
+    name = model_path.split('/')[-1].split('_')[0]
+    # Save predicted probabilities and predictions from model on test set
+    with open("/home/21576262@su/masters/models/testing_data/" + name + '.json', "w") as f:
+        json.dump([true_labels, model_probabilities, model_predictions], f)
+        
+    # Visualisation
+    # to save figures
+    my_dirc = '/home/21576262@su/masters/reports/figures/' + model_name
+    if not os.path.isdir(my_dirc):
+        os.makedirs(my_dirc)
+    roc_plot(true_labels, model_probabilities, name)
+    plot_confusion_matrix(true_labels, model_predictions, name)
 
 if __name__ == '__main__':
     main()

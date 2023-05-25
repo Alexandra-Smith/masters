@@ -234,8 +234,8 @@ def main():
     }
     
     # using full set of data
-    img_dir = '../../data/patches/'
-    labels_dir = '../../data/labels/'
+    img_dir = '/home/21576262@su/masters/data/patches/'
+    labels_dir = '/home/21576262@su/masters/data/labels/' 
     # img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
     # labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
 
