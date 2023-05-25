@@ -50,9 +50,6 @@ def train_model(model, dataloaders, progress, criterion, optimizer, num_epochs=2
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
-                        # Apply learning rate scheduling if needed
-                        if scheduler != None:
-                            scheduler.step()
                         
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
@@ -69,6 +66,11 @@ def train_model(model, dataloaders, progress, criterion, optimizer, num_epochs=2
             print(f'Epoch {epoch + 1}/{num_epochs}, {phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
         
         print()
+        
+        # Apply learning rate scheduling if needed
+        if scheduler != None:
+            scheduler.step()
+            
         # Log the loss and accuracy values at the end of each epoch
         wandb.log({
             "Epoch": epoch,

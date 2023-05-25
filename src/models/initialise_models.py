@@ -84,24 +84,22 @@ def resnet(num_classes):
     learning_rate_decay = 0.85
     parameters = {"learning_rate": learning_rate, "learning_rate_decay": learning_rate_decay, "weight_decay": weight_decay}
 
-    # must be one of [18, 34, 50, 101, 152]
-    num_layers=18
-    model_constructor = getattr(torchvision.models, f"resnet{num_layers}")
-    model = model_constructor(num_classes=num_classes)
-    # Modify to take any input
-    model.avgpool = nn.AdaptiveAvgPool2d((1, 1)) # Replace nn.AvgPool2d with nn.AdaptiveAvgPool2d
-    model.fc = nn.Linear(model.fc.in_features, num_classes)
+    model = torchvision.models.resnet18(pretrained=True)
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs, num_classes)
     
-    pretrained = model_constructor(pretrained=True).state_dict()
-    if num_classes != pretrained["fc.weight"].size(0):
-        del pretrained["fc.weight"], pretrained["fc.bias"]
-    model.load_state_dict(state_dict=pretrained, strict=False)
-
- 
-
-    # model = torchvision.models.resnet18(pretrained=True)   #load resnet18 model
-    # num_features = model.fc.in_features     #extract fc layers features
-    # model.fc = nn.Linear(num_features, 2)
+#     # must be one of [18, 34, 50, 101, 152]
+#     num_layers=18
+#     model_constructor = getattr(torchvision.models, f"resnet{num_layers}")
+#     model = model_constructor(num_classes=num_classes)
+#     # Modify to take any input
+#     model.avgpool = nn.AdaptiveAvgPool2d((1, 1)) # Replace nn.AvgPool2d with nn.AdaptiveAvgPool2d
+#     model.fc = nn.Linear(model.fc.in_features, num_classes)
+    
+#     pretrained = model_constructor(pretrained=True).state_dict()
+#     if num_classes != pretrained["fc.weight"].size(0):
+#         del pretrained["fc.weight"], pretrained["fc.bias"]
+#     model.load_state_dict(state_dict=pretrained, strict=False)
 
     optimiser = optim.Adam(params=model.parameters(),
                            lr=learning_rate,
