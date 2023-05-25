@@ -3,48 +3,50 @@ RUN SCRIPT AS:
 model_testing.py path_to_model_weights
 '''
 
+import numpy as np
 from tqdm import tqdm
 import os
-import sys
 import torch
 import torch.nn as nn
-from torchvision import transforms
+import torchvision
+from torchvision import datasets, models, transforms
 from torch.utils.data import Dataset
 import random
 import torch.utils.data as data_utils
+import wandb
 from PIL import Image
-from sklearn import metrics
-import matplotlib.pyplot as plt
-from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, ConfusionMatrixDisplay
+import seaborn as sns
+import sys
 
 def load_trained_model(num_classes, model_path): 
 
-    # # INCEPTION
-    # # Define model architecture
-    # model = torch.hub.load('pytorch/vision:v0.6.0', 'inception_v3', pretrained=True)
-    # # Replace last layers with new layers
-    # num_ftrs = model.fc.in_features
-    # model.fc = nn.Sequential(
-    #     nn.Linear(num_ftrs, 2048),
-    #     nn.ReLU(inplace=True),
-    #     nn.Dropout(p=0.7),
-    #     nn.Linear(2048, num_classes),
-    #     nn.Softmax(dim=1)
-    # )
-    model = nn.Sequential(
-        nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1),
-        nn.ReLU(),
-        nn.MaxPool2d(kernel_size=2),
-        nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1),
-        nn.ReLU(),
-        nn.MaxPool2d(kernel_size=2),
-        nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1),
-        nn.ReLU(),
-        nn.MaxPool2d(kernel_size=2),
-        nn.Flatten(),
-        nn.Linear(64 * 32 * 32, 512),
-        nn.ReLU(),
-        nn.Linear(512, num_classes),
+    # model = nn.Sequential(
+    #         nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1),
+    #         nn.ReLU(),
+    #         nn.MaxPool2d(kernel_size=2),
+    #         nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1),
+    #         nn.ReLU(),
+    #         nn.MaxPool2d(kernel_size=2),
+    #         nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1),
+    #         nn.ReLU(),
+    #         nn.MaxPool2d(kernel_size=2),
+    #         nn.Flatten(),
+    #         nn.Linear(64 * 32 * 32, 512),
+    #         nn.ReLU(),
+    #         nn.Linear(512, num_classes),
+    #     )
+
+    # INCEPTION
+    # Define model architecture
+    model = torch.hub.load('pytorch/vision:v0.6.0', 'inception_v3', pretrained=True)
+    # Replace last layers with new layers
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Sequential(
+        nn.Linear(num_ftrs, 2048),
+        nn.ReLU(inplace=True),
+        nn.Dropout(p=0.7),
+        nn.Linear(2048, num_classes),
+        nn.Softmax(dim=1)
     )
 
     # Load the saved model state dict
@@ -227,10 +229,10 @@ def load_data(INPUT_SIZE, SEED, batch_size, num_cpus):
     }
 
     # using full set of data
-    # img_dir = '../data/processed/patches/'
-    # labels_dir = '../data/processed/labels/'
-    img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
-    labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
+    img_dir = '../../data/patches/'
+    labels_dir = '../../data/labels/'
+    # img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
+    # labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
 
     split=[70, 15, 15] # for splitting into train/val/test
 
@@ -259,9 +261,9 @@ def load_data(INPUT_SIZE, SEED, batch_size, num_cpus):
 
     return dataloaders
 
-def roc_plot(y_test, predicted_probs):
+def roc_plot(y_test, model_probabilities):
     # keep probabilities for the positive outcome only
-    predicted_probs = predicted_probs[:, 1]
+    predicted_probs = [model_probabilities[i][1] for i in range(len(model_probabilities))]
     # calculate scores
     auc_score = roc_auc_score(y_test, predicted_probs)
     # summarize scores
@@ -273,12 +275,13 @@ def roc_plot(y_test, predicted_probs):
     ns_fpr, ns_tpr, _ = roc_curve(y_test, ns_probs)
 
     # plot the roc curve for the model
-    plt.plot(ns_fpr, ns_tpr, linestyle='--', label='No Skill')
-    plt.plot(fpr, tpr, marker='.', label='Model')
+    plt.plot(ns_fpr, ns_tpr, color='mediumseagreen', linestyle='--', label='No Skill')
+    plt.plot(fpr, tpr, color='mediumorchid', marker='.', label='Model')
     # axis labels
     plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
     plt.legend()
-    plt.show()
+    # plt.show()
+    plt.savefig("../../data/roc1.png")
 
 def get_metrics(y_test, predictions):
     report = metrics.classification_report(y_test, predictions)
@@ -286,21 +289,31 @@ def get_metrics(y_test, predictions):
 
 def plot_confusion_matrix(y_test, predictions):
     cm = confusion_matrix(y_test, predictions)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-    disp.plot()
-    plt.show()
+    group_counts = ['{0:0.0f}'.format(value) for value in cm.flatten()]
+    group_percentages = ['{0:.2%}'.format(value) for value in cm.flatten()/np.sum(cm)]
+    labels = [f"{v1}\n({v2})" for v1, v2 in zip(group_counts,group_percentages)]
+    labels = np.asarray(labels).reshape(2,2)
+    sns.heatmap(cm, annot=labels, fmt='', cmap='BuGn')
+    plt.title('Confusion Matrix');
+    plt.xlabel('\nPredicted Label')
+    plt.ylabel('True Label')
+    # disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    # disp.plot(cmap='plasma', values_format='.0f')
+    # disp.plot(cmap='PuBuGn', values_format='.2%')
+    # plt.show()
+    plt.savefig("../../data/cm.png")
 
 def main():
     ##### SET PARAMETERS #####
     num_classes = 2
-    batch_size = 64
-    model_name = 'None'
+    batch_size = 32
+    model_name = 'inception'
 
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
     SEED=42
     num_cpus=8
-
+ 
     if model_name == 'inception': 
         INPUT_SIZE=299 
     else: INPUT_SIZE=PATCH_SIZE
@@ -326,9 +339,5 @@ def main():
 
     plot_confusion_matrix(true_labels, model_probabilities)
 
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
 if __name__ == '__main__':
     main()

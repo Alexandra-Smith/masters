@@ -226,10 +226,10 @@ def main():
     }
     
     # using full set of data
-    # img_dir = '../../data/patches/'
-    # labels_dir = '../../data/labels/'
-    img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
-    labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
+    img_dir = '../../data/patches/'
+    labels_dir = '../../data/labels/'
+    # img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
+    # labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
 
     split=[70, 15, 15] # for splitting into train/val/test
 
