@@ -1,6 +1,6 @@
 '''
 Run as:
-train_model.py 'notes about run for wandb'
+train_model.py | model_architecture | 'notes about run for wandb'
 '''
 import os
 import sys
@@ -195,33 +195,39 @@ def main():
     # Number of classes in the dataset
     num_classes = 2
     # Batch size for training (change depending on how much memory you have)
-    batch_size = 16
+    batch_size = 32
     # Number of epochs to train for
-    num_epochs = 25
+    num_epochs = 20
+    
+    model_name = sys.argv[1]
     
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
     SEED=42
     num_cpus=8
     
-    INPUT_SIZE=299
+    if model_name == 'inception': 
+        INPUT_SIZE=299
+    elif model_name == 'resnet':
+        INPUT_SIZE=224
+    else: INPUT_SIZE=PATCH_SIZE
 
     # * can automate this
     # Initialise data transforms
     data_transforms = {
         'train': transforms.Compose([
-            # transforms.Resize(INPUT_SIZE), # inception
+            transforms.Resize(INPUT_SIZE),
             # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
         'val': transforms.Compose([
-            # transforms.Resize(INPUT_SIZE), # inception
+            transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
             # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
         'test' : transforms.Compose([
-            # transforms.Resize(INPUT_SIZE), # inception
+            transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
             # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
@@ -275,7 +281,7 @@ def main():
     run = wandb.init(
         # Set the project where this run will be logged
         project="masters",
-        notes=sys.argv[1],
+        notes=sys.argv[2],
         # Track hyperparameters and run metadata
         config=parameters)
     progress = {'train': tqdm(total=len(dataloaders['train']), desc="Training progress"), 'val': tqdm(total=len(dataloaders['val']), desc="Validation progress")}
