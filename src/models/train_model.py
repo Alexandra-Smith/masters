@@ -13,6 +13,7 @@ import torch.utils.data as data_utils
 from PIL import Image
 import wandb
 import initialise_models
+import torchinfo
 
 def train_model(model, dataloaders, progress, criterion, optimizer, num_epochs=25, scheduler=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -270,6 +271,8 @@ def main():
     scheduler = None
     # Initialize the model for this run
     model, optimiser, criterion, parameters, scheduler = initialise_models.resnet(num_classes)
+    # print("\n TORCHINFO SUMMARY \n")
+    # print(torchinfo.summary(model, (3, 299, 299), batch_dim=0, col_names=('input_size', 'output_size', 'num_params', 'kernel_size'), verbose=0))
 
     # Send the model to GPU
     model = model.to(device)

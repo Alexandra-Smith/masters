@@ -6,7 +6,7 @@ import torchvision
 
 # Simple 6 layer CNN (1st implemented)
 # DOI: 10.1038/srep46450
-def NN(num_classes):
+def CNN(num_classes):
     # Model parameters
     learning_rate = 0.001
     learning_rate_decay = 0.0000001
@@ -32,7 +32,7 @@ def NN(num_classes):
     optimiser = optim.SGD(model.parameters(), lr=learning_rate, weight_decay=learning_rate_decay)
     criterion = nn.CrossEntropyLoss()
 
-    return model, optimiser, criterion, parameters
+    return model, optimiser, criterion, parameters, None
 
 # Pretrained Inception (2nd model)
 # DOI:10.1038/s41598-018-27707-4
@@ -72,7 +72,7 @@ def inception0(num_classes):
     # Setup the loss fxn
     criterion = nn.CrossEntropyLoss()
 
-    return model, optimiser, criterion, parameters
+    return model, optimiser, criterion, parameters, None
 
 # Pretrained ResNet
 # https://doi.org/10.1038/s41598-019-40041-7

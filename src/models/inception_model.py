@@ -4,12 +4,14 @@ import torch.nn.functional as F
 from torchinfo import summary as Model_Summary
 import torch.optim as optim
 from typing import Optional
+import torchinfo
+from torchsummary import summary
 
 # Convolutional block
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride, padding='same'):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding='same'):
         super(ConvBlock, self).__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=False)
         # could also use default momentum and eps values for batch norm
         self.batch_norm = nn.BatchNorm2d(out_channels, eps=0.001, momentum=0.9997)
         
@@ -17,7 +19,7 @@ class ConvBlock(nn.Module):
         return F.relu(self.batch_norm(self.conv(x)))
     
     # Inception blocks
-    class InceptionBlockA(nn.Module):
+class InceptionBlockA(nn.Module):
     def __init__(self, 
                 in_channels: int,
                 pool_features: int
@@ -208,13 +210,13 @@ class InceptionAux(nn.Module):
             ):
         super(InceptionAux, self).__init__()
         self.conv0 = ConvBlock(in_channels, 128, kernel_size=1)
-        self.conv1 = ConvBlock(128, 768, kernel_size=5)
-        # self.conv1.stddev = 0.01
+        self.conv1 = ConvBlock(128, 768, kernel_size=5, padding='valid')
+        self.conv1.stddev = 0.01
         self.fc = nn.Linear(768, num_classes)
-        # self.fc.stddev = 0.001
+        self.fc.stddev = 0.001
     
     def forward(self, x):
-        x = F.avg_pool2d(x, kernel_size=5, stride=3)
+        x = F.avg_pool2d(x, kernel_size=5, stride=3, padding='valid')
         x = self.conv0(x)
         x = self.conv1(x)
         x = F.adaptive_avg_pool2d(x, (1 ,1))
@@ -233,12 +235,12 @@ class InceptionV3(nn.Module):
         self.aux_logits = aux_logits
         
         # Initial convolutional and pooling layers
-        self.conv0 = nn.Conv2d(3, 32, kernel_size=3, stride=2)
-        self.conv1 = nn.Conv2d(32, 32, kernel_size=3)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3)
+        self.conv0 = ConvBlock(3, 32, kernel_size=3, stride=2, padding=0)
+        self.conv1 = ConvBlock(32, 32, kernel_size=3)
+        self.conv2 = ConvBlock(32, 64, kernel_size=3)
         self.pool1 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.conv3 = nn.Conv2d(64, 80, kernel_size=1)
-        self.conv4 = nn.Conv2d(80, 192, kernel_size=3)
+        self.conv3 = ConvBlock(64, 80, kernel_size=1)
+        self.conv4 = ConvBlock(80, 192, kernel_size=3)
         self.pool2 = nn.MaxPool2d(kernel_size=3, stride=2)
 
         # Inception blocks
@@ -296,3 +298,12 @@ class InceptionV3(nn.Module):
         x = self.fc(x)
 
         return x, aux
+    
+def main():
+    model = InceptionV3()
+    # print(summary(model, input_size=(3, 299, 299)))
+    print("\n TORCHINFO SUMMARY \n")
+    print(torchinfo.summary(model, (3, 299, 299), batch_dim=0, col_names=('input_size', 'output_size', 'num_params', 'kernel_size'), verbose=0))
+
+if __name__=='__main__':
+    main()
