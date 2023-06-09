@@ -216,7 +216,7 @@ class InceptionAux(nn.Module):
         self.fc.stddev = 0.001
     
     def forward(self, x):
-        x = F.avg_pool2d(x, kernel_size=5, stride=3, padding='valid')
+        x = F.avg_pool2d(x, kernel_size=5, stride=3, padding=0)
         x = self.conv0(x)
         x = self.conv1(x)
         x = F.adaptive_avg_pool2d(x, (1 ,1))
@@ -301,9 +301,11 @@ class InceptionV3(nn.Module):
     
 def main():
     model = InceptionV3()
+
+    # Printing model architecture summary
     # print(summary(model, input_size=(3, 299, 299)))
-    print("\n TORCHINFO SUMMARY \n")
-    print(torchinfo.summary(model, (3, 299, 299), batch_dim=0, col_names=('input_size', 'output_size', 'num_params', 'kernel_size'), verbose=0))
+    # print("\n TORCHINFO SUMMARY \n")
+    # print(torchinfo.summary(model, (3, 299, 299), batch_dim=0, col_names=('input_size', 'output_size', 'num_params', 'kernel_size'), verbose=0))
 
 if __name__=='__main__':
     main()

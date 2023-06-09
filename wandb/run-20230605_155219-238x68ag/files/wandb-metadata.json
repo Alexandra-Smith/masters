@@ -1,0 +1,25 @@
+{
+    "os": "macOS-12.4-arm64-arm-64bit",
+    "python": "3.8.13",
+    "heartbeatAt": "2023-06-05T13:52:21.267458",
+    "startedAt": "2023-06-05T13:52:19.943463",
+    "docker": null,
+    "cpu_count": 8,
+    "cuda": null,
+    "args": [
+        "inception",
+        "full inception"
+    ],
+    "state": "running",
+    "program": "src/models/train_model.py",
+    "codePath": "src/models/train_model.py",
+    "git": {
+        "remote": "https://github.com/Alexandra-Smith/masters.git",
+        "commit": "e07ebe38c08b68ecea7609c621a16c0bfa5126e7"
+    },
+    "email": "alexandrasmith0904@gmail.com",
+    "root": "/Users/alexandrasmith/Desktop/Workspace/Projects/masters",
+    "host": "AlexandrasMacBookPro",
+    "username": "alexandrasmith",
+    "executable": "/Users/alexandrasmith/miniforge3/envs/masters/bin/python3"
+}
