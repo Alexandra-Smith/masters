@@ -235,10 +235,10 @@ def main():
     }
     
     # using full set of data
-    img_dir = '/home/21576262@su/masters/data/patches/'
-    labels_dir = '/home/21576262@su/masters/data/labels/' 
-    # img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
-    # labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
+    # img_dir = '/home/21576262@su/masters/data/patches/'
+    # labels_dir = '/home/21576262@su/masters/data/labels/' 
+    img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
+    labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
 
     split=[70, 15, 15] # for splitting into train/val/test
 
@@ -266,11 +266,12 @@ def main():
     }
 
     # Detect if we have a GPU available
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps" if torch.has_mps else "cpu") # run on mac
     
     scheduler = None
     # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.resnet(num_classes)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes)
     # print("\n TORCHINFO SUMMARY \n")
     # print(torchinfo.summary(model, (3, 299, 299), batch_dim=0, col_names=('input_size', 'output_size', 'num_params', 'kernel_size'), verbose=0))
 
