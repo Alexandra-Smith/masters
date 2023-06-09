@@ -268,15 +268,13 @@ def main():
     # Detect if we have a GPU available
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = torch.device("mps" if torch.has_mps else "cpu") # run on mac
+    print(device)
     
     scheduler = None
     # Initialize the model for this run
     model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes)
     # print("\n TORCHINFO SUMMARY \n")
     # print(torchinfo.summary(model, (3, 299, 299), batch_dim=0, col_names=('input_size', 'output_size', 'num_params', 'kernel_size'), verbose=0))
-
-    # Send the model to GPU
-    model = model.to(device)
    
     # Initialize WandB  run
     wandb.login()
@@ -291,7 +289,8 @@ def main():
     progress = {'train': tqdm(total=len(dataloaders['train']), desc="Training progress"), 'val': tqdm(total=len(dataloaders['val']), desc="Validation progress")}
 
     # Train and evaluate
-    model = train_model(model, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
+    # Send model to gpu
+    model = train_model(model.to(device), dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
     
     # Save model
     torch.save(model.state_dict(), '../../models/' + str(run.name) + '_model_weights.pth')
