@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
 import torchvision
+from inception_model import InceptionV3
 
 # Simple 6 layer CNN (1st implemented)
 # DOI: 10.1038/srep46450
@@ -110,3 +111,23 @@ def resnet(num_classes):
     criterion = nn.CrossEntropyLoss()
 
     return model, optimiser, criterion, parameters, scheduler
+
+def INCEPTIONv3(num_classes):
+    model = InceptionV3
+
+    # Hyperparameters
+    WEIGHT_DECAY = 0.9                  # Decay term for RMSProp.
+    # weight_decay = 0.00004?
+    # from inception_v3_parameters
+    MOMENTUM = 0.9                      # Momentum in RMSProp.
+    EPSILON = 1.0                       # Epsilon term for RMSProp.
+    INITIAL_LEARNING_RATE = 0.1         # Initial learning rate.
+    NUM_EPOCHS_PER_DECAY = 30.0         # Epochs after which learning rate decays.
+    LEARNING_RATE_DECAY_FACTOR = 0.16   # Learning rate decay factor.
+
+    model = InceptionV3()
+    optimiser = optim.RMSprop(model.parameters(), lr=INITIAL_LEARNING_RATE, momentum=MOMENTUM, eps=EPSILON, weight_decay=WEIGHT_DECAY)
+    criterion = nn.CrossEntropyLoss()
+    parameters = {"learning_rate": INITIAL_LEARNING_RATE, "momentum": MOMENTUM, "epsilon": EPSILON, 'RMS_weight_decay': WEIGHT_DECAY}
+
+    return model, optimiser, criterion, parameters, None
