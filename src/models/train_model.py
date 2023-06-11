@@ -12,12 +12,15 @@ import random
 import torch.utils.data as data_utils
 from PIL import Image
 import wandb
+import pandas as pd
 import initialise_models
 import torchinfo
 
-def train_model(model, dataloaders, progress, criterion, optimizer, num_epochs=25, scheduler=None):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+def train_model(model, mode, device, dataloaders, progress, criterion, optimizer, num_epochs=25, scheduler=None):
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
+    if mode not in ['tissueclass', 'her2status']:
+        raise Exception("ERROR: model mode given not on one 'tissueclass' or 'her2status'.")
     for epoch in range(num_epochs):
         print('-' * 10)
         print('Epoch {}/{}'.format(epoch+1, num_epochs))
@@ -33,9 +36,11 @@ def train_model(model, dataloaders, progress, criterion, optimizer, num_epochs=2
             running_loss = 0.0
             running_corrects = 0
             
-            for inputs, labels in dataloaders[phase]:
+            for inputs, labels, her2_labels in dataloaders[phase]:
                 inputs = inputs.to(device)
                 labels = labels.to(device)
+                if mode == 'her2status':
+                    her2_labels = her2_labels.to(device)
                 
                 progress[phase].update()
                 
@@ -46,14 +51,24 @@ def train_model(model, dataloaders, progress, criterion, optimizer, num_epochs=2
                     if isinstance(outputs, tuple):
                         outputs = outputs[0] # extract tensor if output is a tuple
                     _, preds = torch.max(outputs, 1)
-                    loss = criterion(outputs, labels)
+                    if mode == 'tissueclass':
+                        loss = criterion(outputs, labels)
+                    if mode == 'her2status':
+                        loss = criterion(outputs, her2_labels)
                     
                     if phase == 'train':
+                        # L2 regularisation
+                        # l2_lambda = 1e-4
+                        # l2_norm = sum(p.pow(2.0).sum() for p in model.parameters())
+                        # loss = loss + l2_lambda * l2_norm
                         loss.backward()
                         optimizer.step()
                         
                 running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
+                if mode == 'tissueclass':
+                    running_corrects += torch.sum(preds == labels.data)
+                if mode == 'her2status':
+                    running_corrects += torch.sum(preds == her2_labels.data)
                 
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)
@@ -157,6 +172,9 @@ class CustomDataset(Dataset):
 
         self.imgs = [] # Keeps image paths to load in the __getitem__ method
         self.labels = []
+        self.HER2_labels = []
+
+        df_status = get_her2_status_labels()
 
         # Load images and corresponding labels
         for i, (img_folder, label_file) in enumerate(zip(img_folders, label_files)):
@@ -166,11 +184,16 @@ class CustomDataset(Dataset):
             for i, img in enumerate(os.listdir(img_folder)):
                 if os.path.isfile(img_folder + '/' + img) and os.path.isfile(label_file):
                     # print(img_folder + img)
+                    case_id = img_folder.split('/')[-1]
                     if img.startswith('._'):
                         img = img.replace('._', '')
                     idx = int(img.replace('.png', '').split("_")[1])
                     self.imgs.append(img_folder + '/' + img)
                     self.labels.append(labels_pt[idx].item()) # get label as int
+                    if labels_pt[idx].item() == 1: # if tile is cancerous
+                        self.HER2_labels.append(df_status[case_id])
+                    else: # if not tumorous, there is no HER2 label
+                        self.HER2_labels.append(None)
         
     def __len__(self):
         return len(self.imgs)
@@ -184,8 +207,26 @@ class CustomDataset(Dataset):
             image = self.transform(image)
         
         label = self.labels[idx] # Load corresponding image label
+
+        her2_label = self.HER2_labels[idx]
         
-        return image, label # Return transformed image and label
+        return image, label, her2_label # Return transformed image and label
+
+def get_her2_status_labels():
+
+    file_path = '/Users/alexandrasmith/Desktop/Workspace/Projects/masters/data/raw/HER2DataInfo.xlsx'
+    df = pd.read_excel(file_path)
+
+    df.drop(df.index[-2:], inplace=True)
+
+    df['Case ID'] = df['Case ID'].str.replace('TCGA-','')
+    df['Case ID'] = df['Case ID'].str.replace('-01Z-00-DX1','')
+
+    df['Clinical.HER2.status'] = df['Clinical.HER2.status'].map({'Negative': 0, 'Positive': 1}).astype(int)
+
+    dict = df.set_index('Case ID').to_dict()['Clinical.HER2.status']
+
+    return dict
 
 # -------------------------------------------------------------------------------
 # ----------------------------------MAIN METHOD----------------------------------
@@ -220,17 +261,17 @@ def main():
             transforms.Resize(INPUT_SIZE),
             # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
         'val': transforms.Compose([
             transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
         'test' : transforms.Compose([
             transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
     }
     
@@ -290,7 +331,7 @@ def main():
 
     # Train and evaluate
     # Send model to gpu
-    model = train_model(model.to(device), dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
+    model = train_model(model, 'tissueclass', device, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
     
     # Save model
     torch.save(model.state_dict(), '../../models/' + str(run.name) + '_model_weights.pth')
