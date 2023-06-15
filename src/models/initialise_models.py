@@ -126,8 +126,30 @@ def INCEPTIONv3(num_classes):
     LEARNING_RATE_DECAY_FACTOR = 0.16   # Learning rate decay factor.
 
     model = InceptionV3()
-    optimiser = optim.RMSprop(model.parameters(), lr=INITIAL_LEARNING_RATE, momentum=MOMENTUM, eps=EPSILON, weight_decay=WEIGHT_DECAY)
+    optimiser = optim.RMSprop(model.parameters(), 
+                              lr=INITIAL_LEARNING_RATE, 
+                              momentum=MOMENTUM, 
+                              eps=EPSILON, 
+                              weight_decay=WEIGHT_DECAY)
     criterion = nn.CrossEntropyLoss()
     parameters = {"learning_rate": INITIAL_LEARNING_RATE, "momentum": MOMENTUM, "epsilon": EPSILON, 'RMS_weight_decay': WEIGHT_DECAY}
+
+    return model, optimiser, criterion, parameters, None
+
+def shufflenet():
+
+    model = torch.hub.load('pytorch/vision:v0.10.0', 'shufflenet_v2_x1_0', pretrained=True)
+
+    INITIAL_LEARNING_RATE=5e-5
+    WEIGHT_DECAY=0.9
+    EPSILON=1e-8
+
+    optimiser = optim.Adam(params=model.parameters(),
+                           lr=INITIAL_LEARNING_RATE,
+                           eps=EPSILON,
+                           weight_decay=WEIGHT_DECAY)
+
+
+    parameters = {"learning_rate": INITIAL_LEARNING_RATE, "epsilon": EPSILON, 'Adam_weight_decay': WEIGHT_DECAY}
 
     return model, optimiser, criterion, parameters, None

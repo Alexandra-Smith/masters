@@ -182,13 +182,13 @@ class CustomDataset(Dataset):
             labels_pt = torch.load(label_file) # Load .pt file
             # Run through all patches from the case folder
             for i, img in enumerate(os.listdir(img_folder)):
-                if os.path.isfile(img_folder + '/' + img) and os.path.isfile(label_file):
+                if os.path.isfile(os.path.join(img_folder, img)) and os.path.isfile(label_file):
                     # print(img_folder + img)
                     case_id = img_folder.split('/')[-1]
                     if img.startswith('._'):
                         img = img.replace('._', '')
                     idx = int(img.replace('.png', '').split("_")[1])
-                    self.imgs.append(img_folder + '/' + img)
+                    self.imgs.append(os.path.join(img_folder, img))
                     self.labels.append(labels_pt[idx].item()) # get label as int
                     if labels_pt[idx].item() == 1: # if tile is cancerous
                         self.HER2_labels.append(df_status[case_id])
