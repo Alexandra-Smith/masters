@@ -20,7 +20,7 @@ def train_model(model, mode, device, dataloaders, progress, criterion, optimizer
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     if mode not in ['tissueclass', 'her2status']:
-        raise Exception("ERROR: model mode given not on one 'tissueclass' or 'her2status'.")
+        raise Exception("ERROR: model mode given not one of 'tissueclass' or 'her2status'.")
     for epoch in range(num_epochs):
         print('-' * 10)
         print('Epoch {}/{}'.format(epoch+1, num_epochs))
@@ -174,7 +174,7 @@ class CustomDataset(Dataset):
         self.labels = []
         self.HER2_labels = []
 
-        df_status = get_her2_status_labels()
+        df_her2_status = get_her2_status_list()
 
         # Load images and corresponding labels
         for i, (img_folder, label_file) in enumerate(zip(img_folders, label_files)):
@@ -191,7 +191,7 @@ class CustomDataset(Dataset):
                     self.imgs.append(os.path.join(img_folder, img))
                     self.labels.append(labels_pt[idx].item()) # get label as int
                     if labels_pt[idx].item() == 1: # if tile is cancerous
-                        self.HER2_labels.append(df_status[case_id])
+                        self.HER2_labels.append(df_her2_status[case_id])
                     else: # if not tumorous, there is no HER2 label
                         self.HER2_labels.append(None)
         
@@ -212,7 +212,7 @@ class CustomDataset(Dataset):
         
         return image, label, her2_label # Return transformed image and label
 
-def get_her2_status_labels():
+def get_her2_status_list():
 
     file_path = '/Users/alexandrasmith/Desktop/Workspace/Projects/masters/data/raw/HER2DataInfo.xlsx'
     df = pd.read_excel(file_path)
@@ -272,7 +272,7 @@ def main():
             transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
-        ]),
+        ])
     }
     
     # using full set of data
