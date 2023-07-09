@@ -8,7 +8,6 @@ import torch
 from torchvision import transforms
 from tqdm import tqdm
 import torch.utils.data as data_utils
-from PIL import Image
 import wandb
 import pandas as pd
 import initialise_models
