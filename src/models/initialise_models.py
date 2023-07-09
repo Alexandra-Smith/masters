@@ -78,17 +78,26 @@ def inception0(num_classes):
 # Pretrained ResNet
 # https://doi.org/10.1038/s41598-019-40041-7
 # https://github.com/BMIRDS/deepslide/blob/master/code/utils_model.py
+# from Kather et al
 def resnet(num_classes):
     # Model parameters
-    learning_rate = 0.001
-    weight_decay = 1e-4
-    learning_rate_decay = 0.85
-    parameters = {"learning_rate": learning_rate, "learning_rate_decay": learning_rate_decay, "weight_decay": weight_decay}
+    learning_rate = 1e-6
+    # weight_decay = 1e-4
+    # learning_rate_decay = 0.85
+    parameters = {"learning_rate": learning_rate}
 
     model = torchvision.models.resnet18(pretrained=True)
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, num_classes)
-    
+
+    # Freeze all the parameters
+    for param in model.parameters():
+        param.requires_grad = False
+
+    # Set the last 10 layers to trainable
+    for param in list(model.parameters())[-10:]:
+        param.requires_grad = True
+        
 #     # must be one of [18, 34, 50, 101, 152]
 #     num_layers=18
 #     model_constructor = getattr(torchvision.models, f"resnet{num_layers}")
@@ -103,17 +112,15 @@ def resnet(num_classes):
 #     model.load_state_dict(state_dict=pretrained, strict=False)
 
     optimiser = optim.Adam(params=model.parameters(),
-                           lr=learning_rate,
-                           weight_decay=weight_decay)
-    scheduler = lr_scheduler.ExponentialLR(optimizer=optimiser,
-                                           gamma=learning_rate_decay)
+                           lr=learning_rate)
+    # scheduler = lr_scheduler.ExponentialLR(optimizer=optimiser, gamma=learning_rate_decay)
     # Setup the loss fxn
     criterion = nn.CrossEntropyLoss()
 
-    return model, optimiser, criterion, parameters, scheduler
+    return model, optimiser, criterion, parameters, None
 
 def INCEPTIONv3(num_classes):
-    model = InceptionV3
+    model = InceptionV3(num_classes=num_classes)
 
     # Hyperparameters
     WEIGHT_DECAY = 0.9                  # Decay term for RMSProp.
@@ -148,8 +155,7 @@ def shufflenet():
                            lr=INITIAL_LEARNING_RATE,
                            eps=EPSILON,
                            weight_decay=WEIGHT_DECAY)
-
-
+    criterion = nn.CrossEntropyLoss()
     parameters = {"learning_rate": INITIAL_LEARNING_RATE, "epsilon": EPSILON, 'Adam_weight_decay': WEIGHT_DECAY}
 
     return model, optimiser, criterion, parameters, None
