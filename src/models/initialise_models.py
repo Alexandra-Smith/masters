@@ -81,7 +81,7 @@ def inception0(num_classes):
 # from Kather et al
 def resnet(num_classes):
     # Model parameters
-    learning_rate = 1e-6
+    learning_rate = 1e-5
     # weight_decay = 1e-4
     # learning_rate_decay = 0.85
     parameters = {"learning_rate": learning_rate}

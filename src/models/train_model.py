@@ -12,6 +12,7 @@ import wandb
 import pandas as pd
 import initialise_models
 import torchinfo
+from . import data_loading
 
 def train_model(model, device, dataloaders, progress, criterion, optimizer, mode='tissueclass', num_epochs=25, scheduler=None):
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -105,7 +106,7 @@ def main():
     # Batch size for training (change depending on how much memory you have)
     batch_size = 32
     # Number of epochs to train for
-    num_epochs = 20
+    num_epochs = 30
     
     model_name = sys.argv[1]
     
@@ -149,7 +150,7 @@ def main():
 
     split=[70, 15, 15] # for splitting into train/val/test
 
-    train_cases, val_cases, test_cases = split_data(img_dir, split, SEED)
+    train_cases, val_cases, test_cases = data_loading.split_data(img_dir, split, SEED)
 
     train_img_folders = [img_dir + case for case in train_cases]
     val_img_folders = [img_dir + case for case in val_cases]
@@ -161,9 +162,9 @@ def main():
     test_labels = [labels_dir + case + '.pt' for case in test_cases]
 
     image_datasets = {
-        'train': CustomDataset(train_img_folders, train_labels, transform=data_transforms['train']),
-        'val': CustomDataset(val_img_folders, val_labels, transform=data_transforms['val']),
-        'test': CustomDataset(test_img_folders, test_labels, transform=data_transforms['test'])
+        'train': data_loading.CustomDataset(train_img_folders, train_labels, transform=data_transforms['train']),
+        'val': data_loading.CustomDataset(val_img_folders, val_labels, transform=data_transforms['val']),
+        'test': data_loading.CustomDataset(test_img_folders, test_labels, transform=data_transforms['test'])
     }
     # Create training, validation and test dataloaders
     dataloaders = {
