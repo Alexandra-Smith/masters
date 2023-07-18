@@ -14,9 +14,9 @@ class CustomDataset(Dataset):
 
         self.imgs = [] # Keeps image paths to load in the __getitem__ method
         self.labels = []
-        self.HER2_labels = []
+        # self.HER2_labels = []
 
-        df_her2_status = get_her2_status_list()
+        # df_her2_status = get_her2_status_list()
 
         # Load images and corresponding labels
         for i, (img_folder, label_file) in enumerate(zip(img_folders, label_files)):
@@ -32,10 +32,10 @@ class CustomDataset(Dataset):
                     idx = int(img.replace('.png', '').split("_")[1])
                     self.imgs.append(os.path.join(img_folder, img))
                     self.labels.append(labels_pt[idx].item()) # get label as int
-                    if labels_pt[idx].item() == 1: # if tile is cancerous
-                        self.HER2_labels.append(df_her2_status[case_id])
-                    else: # if not tumorous, there is no HER2 label
-                        self.HER2_labels.append(None)
+                    # if labels_pt[idx].item() == 1: # if tile is cancerous
+                    #     self.HER2_labels.append(df_her2_status[case_id])
+                    # else: # if not tumorous, there is no HER2 label
+                    #     self.HER2_labels.append(None)
         
     def __len__(self):
         return len(self.imgs)
@@ -50,9 +50,10 @@ class CustomDataset(Dataset):
         
         label = self.labels[idx] # Load corresponding image label
 
-        her2_label = self.HER2_labels[idx]
+        # her2_label = self.HER2_labels[idx]
         
-        return image, label, her2_label # Return transformed image and label
+        # return image, label, her2_label # Return transformed image and label
+        return image, label
 
 # Split image folders into train, val, test
 def split_data(patch_directory, split: list, seed):
@@ -122,7 +123,8 @@ def split_data(patch_directory, split: list, seed):
 
 def get_her2_status_list():
 
-    file_path = '/Users/alexandrasmith/Desktop/Workspace/Projects/masters/data/raw/HER2DataInfo.xlsx'
+    # file_path = '/Users/alexandrasmith/Desktop/Workspace/Projects/masters/data/raw/HER2DataInfo.xlsx'
+    file_path = '/home/21576262@su/masters/data/HER2DataInfo.xlsx'
     df = pd.read_excel(file_path)
 
     df.drop(df.index[-2:], inplace=True)

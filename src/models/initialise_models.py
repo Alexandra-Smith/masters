@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
 import torchvision
-from inception_model import InceptionV3
+from .inception_model import InceptionV3
 
 # Simple 6 layer CNN (1st implemented)
 # DOI: 10.1038/srep46450

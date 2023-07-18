@@ -10,13 +10,12 @@ from tqdm import tqdm
 import torch.utils.data as data_utils
 import wandb
 import pandas as pd
-import models.initialise_models
+from models import initialise_models
 import torchinfo
-from data.data_loading import CustomDataset
+from data.data_loading import CustomDataset, split_data
 
 
 def train_model(model, device, dataloaders, progress, criterion, optimizer, mode='tissueclass', num_epochs=25, scheduler=None):
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     if mode not in ['tissueclass', 'her2status']:
         raise Exception("ERROR: model mode given not one of 'tissueclass' or 'her2status'.")
@@ -35,7 +34,8 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
             running_loss = 0.0
             running_corrects = 0
             
-            for inputs, labels, her2_labels in dataloaders[phase]:
+            # for inputs, labels, her2_labels in dataloaders[phase]:
+            for inputs, labels in dataloaders[phase]:
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 if mode == 'her2status':
@@ -109,7 +109,7 @@ def main():
     # Number of epochs to train for
     num_epochs = 50
     
-    model_name = sys.argv[1]
+    model_name = str(sys.argv[1])
     
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
@@ -144,14 +144,14 @@ def main():
     }
     
     # using full set of data
-    # img_dir = '/home/21576262@su/masters/data/patches/'
-    # labels_dir = '/home/21576262@su/masters/data/labels/' 
-    img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
-    labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
+    img_dir = '/home/21576262@su/masters/data/patches/'
+    labels_dir = '/home/21576262@su/masters/data/labels/' 
+    # img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
+    # labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
 
     split=[70, 15, 15] # for splitting into train/val/test
 
-    train_cases, val_cases, test_cases = data_loading.split_data(img_dir, split, SEED)
+    train_cases, val_cases, test_cases = split_data(img_dir, split, SEED)
 
     train_img_folders = [img_dir + case for case in train_cases]
     val_img_folders = [img_dir + case for case in val_cases]
@@ -190,15 +190,14 @@ def main():
     parameters['batch_size'] = batch_size; parameters['epochs'] = num_epochs
 
     run = wandb.init(
-        # Set the project where this run will be logged
-        project="masters",
+        project="masters", # set project
         notes=sys.argv[2],
-        # Track hyperparameters and run metadata
-        config=parameters)
+        config=parameters) # Track hyperparameters and run metadata
+    
     progress = {'train': tqdm(total=len(dataloaders['train']), desc="Training progress"), 'val': tqdm(total=len(dataloaders['val']), desc="Validation progress")}
 
     # Train and evaluate
-    # Send model to gpu
+    # and send model to gpu
     model = train_model(model, device, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
     
     # Save data split
@@ -206,10 +205,10 @@ def main():
                   'val': val_img_folders,
                   'test': test_img_folders
                  }
-    with open('masters/models/data_splits/' + str(run.name) + '.json', 'w') as file:
+    with open('/home/21576262@su/masters/models/data_splits/' + str(run.name) + '.json', 'w') as file:
         json.dump(data_split, file)
     # Save model
-    torch.save(model.state_dict(), 'masters/models' + str(run.name) + '_model_weights.pth')
+    torch.save(model.state_dict(), '/home/21576262@su/masters/models' + str(run.name) + '_model_weights.pth')
 
 if __name__ == '__main__':
     main()
