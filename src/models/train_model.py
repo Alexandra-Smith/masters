@@ -15,7 +15,7 @@ import torchinfo
 from . import data_loading
 
 def train_model(model, device, dataloaders, progress, criterion, optimizer, mode='tissueclass', num_epochs=25, scheduler=None):
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     if mode not in ['tissueclass', 'her2status']:
         raise Exception("ERROR: model mode given not one of 'tissueclass' or 'her2status'.")
@@ -106,14 +106,14 @@ def main():
     # Batch size for training (change depending on how much memory you have)
     batch_size = 32
     # Number of epochs to train for
-    num_epochs = 30
+    num_epochs = 50
     
     model_name = sys.argv[1]
     
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
     SEED=42
-    num_cpus=8
+    num_cpus=4
     
     if model_name == 'inception': 
         INPUT_SIZE=299
@@ -174,13 +174,13 @@ def main():
     }
 
     # Detect if we have a GPU available
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = torch.device("mps" if torch.has_mps else "cpu") # run on mac
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("mps" if torch.has_mps else "cpu") # run on mac
     print(device)
     
     scheduler = None
     # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.resnet18(num_classes)
     # print("\n TORCHINFO SUMMARY \n")
     # print(torchinfo.summary(model, (3, 299, 299), batch_dim=0, col_names=('input_size', 'output_size', 'num_params', 'kernel_size'), verbose=0))
    
@@ -198,10 +198,17 @@ def main():
 
     # Train and evaluate
     # Send model to gpu
-    model = train_model(model, 'tissueclass', device, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
+    model = train_model(model, device, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
     
+    # Save data split
+    data_split = {'train': train_img_folders,
+                  'val': val_img_folders,
+                  'test': test_img_folders
+                 }
+    with open('masters/models/data_splits/' + str(run.name) + '.json', 'w') as file:
+        json.dump(data_split, file)
     # Save model
-    torch.save(model.state_dict(), '../../models/' + str(run.name) + '_model_weights.pth')
+    torch.save(model.state_dict(), 'masters/models' + str(run.name) + '_model_weights.pth')
 
 if __name__ == '__main__':
     main()

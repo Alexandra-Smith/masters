@@ -79,7 +79,7 @@ def inception0(num_classes):
 # https://doi.org/10.1038/s41598-019-40041-7
 # https://github.com/BMIRDS/deepslide/blob/master/code/utils_model.py
 # from Kather et al
-def resnet(num_classes):
+def resnet18(num_classes):
     # Model parameters
     learning_rate = 1e-5
     # weight_decay = 1e-4
