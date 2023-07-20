@@ -53,7 +53,7 @@ class CustomDataset(Dataset):
         # her2_label = self.HER2_labels[idx]
         
         # return image, label, her2_label # Return transformed image and label
-        return image, label
+        return image, label # Return transformed image and label
 
 # Split image folders into train, val, test
 def split_data(patch_directory, split: list, seed):

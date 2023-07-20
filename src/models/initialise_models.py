@@ -81,10 +81,10 @@ def inception0(num_classes):
 # from Kather et al
 def resnet18(num_classes):
     # Model parameters
-    learning_rate = 1e-5
-    # weight_decay = 1e-4
+    learning_rate = 1e-6
+    weight_decay = 1e-4
     # learning_rate_decay = 0.85
-    parameters = {"learning_rate": learning_rate}
+    parameters = {"learning_rate": learning_rate, "weight_decay": weight_decay}
 
     model = torchvision.models.resnet18(pretrained=True)
     num_ftrs = model.fc.in_features
@@ -112,10 +112,13 @@ def resnet18(num_classes):
 #     model.load_state_dict(state_dict=pretrained, strict=False)
 
     optimiser = optim.Adam(params=model.parameters(),
-                           lr=learning_rate)
+                           lr=learning_rate,
+                           weight_decay=weight_decay
+                          )
     # scheduler = lr_scheduler.ExponentialLR(optimizer=optimiser, gamma=learning_rate_decay)
     # Setup the loss fxn
     criterion = nn.CrossEntropyLoss()
+    # criterion = nn.BCEWithLogitsLoss()
 
     return model, optimiser, criterion, parameters, None
 

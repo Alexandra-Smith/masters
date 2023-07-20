@@ -18,6 +18,7 @@ from PIL import Image
 import seaborn as sns
 import sys
 from sklearn import metrics
+import pandas as pd
 import matplotlib.pyplot as plt
 import json
 from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, ConfusionMatrixDisplay
@@ -52,12 +53,18 @@ def load_trained_model(num_classes, model_path):
         nn.Linear(2048, num_classes),
         nn.Softmax(dim=1)
     )
-
+    
+    # RESNET
+    # model = torchvision.models.resnet18(pretrained=True)
+    # num_ftrs = model.fc.in_features
+    # model.fc = nn.Linear(num_ftrs, num_classes)
+    
+    
     # Load the saved model state dict
     model.load_state_dict(torch.load(model_path))
-
     # Set the model to evaluation mode
     model.eval()
+    
 
     return model
 
@@ -265,6 +272,10 @@ def load_data(INPUT_SIZE, SEED, batch_size, num_cpus):
 
     return dataloaders
 
+def get_metrics(y_test, predictions):
+    report = metrics.classification_report(y_test, predictions)
+    return report
+
 def roc_plot(y_test, model_probabilities, model_name):
     # keep probabilities for the positive outcome only
     predicted_probs = [model_probabilities[i][1] for i in range(len(model_probabilities))]
@@ -283,15 +294,11 @@ def roc_plot(y_test, model_probabilities, model_name):
     plt.plot(fpr, tpr, color='mediumorchid', marker='.', label='Model')
     # axis labels
     plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
-    plt.legend(
+    plt.legend()
     plt.title('AUC=%.3f' % (auc_score))
     # plt.show()
-    fig_name = 'roc.png'
-    plt.savefig("/home/21576262@su/masters/reports/figures/" + model_name + '/' + fig_name)
-
-def get_metrics(y_test, predictions):
-    report = metrics.classification_report(y_test, predictions)
-    return report
+    plt.savefig("/home/21576262@su/masters/reports/results/" + model_name + '/roc.png')
+    plt.clf()
 
 def plot_confusion_matrix(y_test, predictions, model_name):
     cm = confusion_matrix(y_test, predictions)
@@ -308,7 +315,8 @@ def plot_confusion_matrix(y_test, predictions, model_name):
     # disp.plot(cmap='PuBuGn', values_format='.2%')
     # plt.show()
     fig_name = 'cm.png'
-    plt.savefig("/home/21576262@su/masters/reports/figures/" + model_name + '/' + fig_name)
+    plt.savefig("/home/21576262@su/masters/reports/results/" + model_name + '/' + fig_name)
+    plt.clf()
 
 def main():
     ##### SET PARAMETERS #####
@@ -322,7 +330,9 @@ def main():
     num_cpus=8
  
     if model_name == 'inception': 
-        INPUT_SIZE=299 
+        INPUT_SIZE=299
+    elif model_name == 'resnet':
+        INPUT_SIZE=224
     else: INPUT_SIZE=PATCH_SIZE
 
     # Load data
@@ -333,7 +343,7 @@ def main():
     model = load_trained_model(num_classes, model_path)
 
     # Detect if we have a GPU available
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Send the model to GPU
     model = model.to(device)
 
@@ -344,14 +354,16 @@ def main():
     
     name = model_path.split('/')[-1].split('_')[0]
     # Save predicted probabilities and predictions from model on test set
-    with open("/home/21576262@su/masters/models/testing_data/" + name + '.json', "w") as f:
-        json.dump([true_labels, model_probabilities, model_predictions], f)
+    D = {"true_labels": true_labels, "model_probabilities": model_probabilities, "model_class_preditions": model_predictions}
+    with open("/home/21576262@su/masters/models/testing_data/" + name + '.json', 'w') as f:
+        json.dump(D, f)
+    
+    my_dirc = '/home/21576262@su/masters/reports/results/' + name
+    if not os.path.isdir(my_dirc):
+        os.makedirs(my_dirc)   
         
     # Visualisation
     # to save figures
-    my_dirc = '/home/21576262@su/masters/reports/figures/' + model_name
-    if not os.path.isdir(my_dirc):
-        os.makedirs(my_dirc)
     roc_plot(true_labels, model_probabilities, name)
     plot_confusion_matrix(true_labels, model_predictions, name)
 
