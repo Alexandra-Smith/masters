@@ -106,7 +106,7 @@ def main():
     # Number of classes in the dataset
     num_classes = 2
     # Batch size for training (change depending on how much memory you have)
-    batch_size = 64
+    batch_size = 32
     # Number of epochs to train for
     num_epochs = 25
     
@@ -131,17 +131,17 @@ def main():
             transforms.RandomHorizontalFlip(),
             transforms.RandomVerticalFlip(),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
         'val': transforms.Compose([
             transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
         'test' : transforms.Compose([
             transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ])
     }
     
@@ -183,7 +183,7 @@ def main():
     
     scheduler = None
     # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.resnet18(num_classes)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.inceptionv3_preT(num_classes)
     # print("\n TORCHINFO SUMMARY \n")
     # print(torchinfo.summary(model, (3, 299, 299), batch_dim=0, col_names=('input_size', 'output_size', 'num_params', 'kernel_size'), verbose=0))
    
