@@ -5,6 +5,7 @@ train_model.py | model_architecture | 'notes about run for wandb'
 import os
 import sys
 import torch
+import json
 from torchvision import transforms
 from tqdm import tqdm
 import torch.utils.data as data_utils
@@ -57,9 +58,9 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
                     
                     if phase == 'train':
                         # L2 regularisation
-                        l2_lambda = 1e-4
-                        l2_norm = sum(p.pow(2.0).sum() for p in model.parameters())
-                        loss += (l2_lambda * l2_norm)
+                        # l2_lambda = 1e-4
+                        # l2_norm = sum(p.pow(2.0).sum() for p in model.parameters())
+                        # loss += (l2_lambda * l2_norm)
                         loss.backward()
                         optimizer.step()
                         
@@ -105,9 +106,9 @@ def main():
     # Number of classes in the dataset
     num_classes = 2
     # Batch size for training (change depending on how much memory you have)
-    batch_size = 32
+    batch_size = 64
     # Number of epochs to train for
-    num_epochs = 50
+    num_epochs = 25
     
     model_name = str(sys.argv[1])
     
@@ -127,19 +128,20 @@ def main():
     data_transforms = {
         'train': transforms.Compose([
             transforms.Resize(INPUT_SIZE),
-            # transforms.RandomHorizontalFlip(),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomVerticalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
         'val': transforms.Compose([
             transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ]),
         'test' : transforms.Compose([
             transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
         ])
     }
     
@@ -161,7 +163,7 @@ def main():
     train_labels = [labels_dir + case + '.pt' for case in train_cases]
     val_labels = [labels_dir + case + '.pt' for case in val_cases]
     test_labels = [labels_dir + case + '.pt' for case in test_cases]
-
+        
     image_datasets = {
         'train': CustomDataset(train_img_folders, train_labels, transform=data_transforms['train']),
         'val': CustomDataset(val_img_folders, val_labels, transform=data_transforms['val']),
@@ -177,7 +179,7 @@ def main():
     # Detect if we have a GPU available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = torch.device("mps" if torch.has_mps else "cpu") # run on mac
-    print(device)
+    # print(device)
     
     scheduler = None
     # Initialize the model for this run
@@ -194,12 +196,6 @@ def main():
         notes=sys.argv[2],
         config=parameters) # Track hyperparameters and run metadata
     
-    progress = {'train': tqdm(total=len(dataloaders['train']), desc="Training progress"), 'val': tqdm(total=len(dataloaders['val']), desc="Validation progress")}
-
-    # Train and evaluate
-    # and send model to gpu
-    model = train_model(model, device, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
-    
     # Save data split
     data_split = {'train': train_img_folders,
                   'val': val_img_folders,
@@ -207,8 +203,16 @@ def main():
                  }
     with open('/home/21576262@su/masters/models/data_splits/' + str(run.name) + '.json', 'w') as file:
         json.dump(data_split, file)
+        
+    progress = {'train': tqdm(total=len(dataloaders['train']), desc="Training progress"), 'val': tqdm(total=len(dataloaders['val']), desc="Validation progress")}
+
+    # Train and evaluate
+    # and send model to gpu
+    model = train_model(model, device, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
+    
     # Save model
-    torch.save(model.state_dict(), '/home/21576262@su/masters/models' + str(run.name) + '_model_weights.pth')
+    torch.save(model.state_dict(), '/home/21576262@su/masters/models/' + str(run.name) + '_model_weights.pth')
+
 
 if __name__ == '__main__':
     main()
