@@ -1,0 +1,128 @@
+{
+    "os": "Linux-5.4.0-148-generic-x86_64-with-glibc2.31",
+    "python": "3.9.7",
+    "heartbeatAt": "2023-07-21T09:35:46.243214",
+    "startedAt": "2023-07-21T09:35:45.364508",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "resnet",
+        "resnet18, fully trained, same parameters before"
+    ],
+    "state": "running",
+    "program": "/home/21576262@su/masters/src/main_training.py",
+    "codePath": "src/main_training.py",
+    "git": {
+        "remote": "https://github.com/Alexandra-Smith/masters.git",
+        "commit": "1b13dfd08ca70556ec83a15c826f72b3f4b454b6"
+    },
+    "email": "alexandrasmith0904@gmail.com",
+    "root": "/home/21576262@su/masters",
+    "host": "jupyter-21576262",
+    "username": "21576262@su",
+    "executable": "/opt/conda/bin/python3",
+    "cpu_count": 8,
+    "cpu_count_logical": 16,
+    "cpu_freq": {
+        "current": 4.5915625,
+        "min": 800.0,
+        "max": 4800.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 4.6,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.599,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.6,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.599,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.599,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.599,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.599,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.6,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.6,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.6,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.599,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.6,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.6,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.6,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.588,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.483,
+            "min": 800.0,
+            "max": 4800.0
+        }
+    ],
+    "disk": {
+        "total": 938.3294372558594,
+        "used": 158.1779022216797
+    },
+    "gpu": "NVIDIA GeForce RTX 2080 SUPER",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 2080 SUPER",
+            "memory_total": 8589934592
+        }
+    ],
+    "memory": {
+        "total": 62.530460357666016
+    }
+}

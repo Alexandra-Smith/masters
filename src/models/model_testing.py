@@ -43,22 +43,21 @@ def load_trained_model(num_classes, model_path):
 
     # INCEPTION
     # Define model architecture
-    model = torch.hub.load('pytorch/vision:v0.6.0', 'inception_v3', pretrained=True)
-    # Replace last layers with new layers
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 2048),
-        nn.ReLU(inplace=True),
-        nn.Dropout(p=0.7),
-        nn.Linear(2048, num_classes),
-        nn.Softmax(dim=1)
-    )
+    # model = torch.hub.load('pytorch/vision:v0.6.0', 'inception_v3', pretrained=True)
+    # # Replace last layers with new layers
+    # num_ftrs = model.fc.in_features
+    # model.fc = nn.Sequential(
+    #     nn.Linear(num_ftrs, 2048),
+    #     nn.ReLU(inplace=True),
+    #     nn.Dropout(p=0.7),
+    #     nn.Linear(2048, num_classes),
+    #     nn.Softmax(dim=1)
+    # )
     
     # RESNET
-    # model = torchvision.models.resnet18(pretrained=True)
-    # num_ftrs = model.fc.in_features
-    # model.fc = nn.Linear(num_ftrs, num_classes)
-    
+    model = torchvision.models.resnet18(pretrained=True)
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs, num_classes)
     
     # Load the saved model state dict
     model.load_state_dict(torch.load(model_path))
@@ -225,17 +224,17 @@ def load_data(INPUT_SIZE, SEED, batch_size, num_cpus):
             transforms.Resize(INPUT_SIZE),
             # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
         'val': transforms.Compose([
             transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
         'test' : transforms.Compose([
             transforms.Resize(INPUT_SIZE),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
     }
 
@@ -321,8 +320,8 @@ def plot_confusion_matrix(y_test, predictions, model_name):
 def main():
     ##### SET PARAMETERS #####
     num_classes = 2
-    batch_size = 32
-    model_name = 'inception'
+    batch_size = 128
+    model_name = 'resnet'
 
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
