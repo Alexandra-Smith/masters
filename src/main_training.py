@@ -183,7 +183,7 @@ def main():
     
     scheduler = None
     # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.resnet18full(num_classes)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.resnet18(num_classes)
     # print("\n TORCHINFO SUMMARY \n")
     # print(torchinfo.summary(model, (3, 299, 299), batch_dim=0, col_names=('input_size', 'output_size', 'num_params', 'kernel_size'), verbose=0))
    
