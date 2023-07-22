@@ -58,9 +58,9 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
                     
                     if phase == 'train':
                         # L2 regularisation
-                        # l2_lambda = 1e-4
-                        # l2_norm = sum(p.pow(2.0).sum() for p in model.parameters())
-                        # loss += (l2_lambda * l2_norm)
+                        l2_lambda = 1e-4
+                        l2_norm = sum(p.pow(2.0).sum() for p in model.parameters())
+                        loss += (l2_lambda * l2_norm)
                         loss.backward()
                         optimizer.step()
                         

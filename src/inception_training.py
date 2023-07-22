@@ -42,8 +42,6 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
                 if mode == 'her2status':
                     her2_labels = her2_labels.to(device)
                 
-                progress[phase].update()
-                
                 optimizer.zero_grad()
                 
                 with torch.set_grad_enabled(phase == 'train'):
@@ -58,9 +56,9 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
                     
                     if phase == 'train':
                         # L2 regularisation
-                        l2_lambda = 1e-4
-                        l2_norm = sum(p.pow(2.0).sum() for p in model.parameters())
-                        loss += (l2_lambda * l2_norm)
+                        # l2_lambda = 1e-4
+                        # l2_norm = sum(p.pow(2.0).sum() for p in model.parameters())
+                        # loss += (l2_lambda * l2_norm)
                         loss.backward()
                         optimizer.step()
                         
@@ -79,13 +77,17 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
             if phase == 'val':
                 loss_valid = epoch_loss
                 acc_valid = epoch_acc
+            
+            progress[phase].set_postfix({'accuracy': epoch_acc})
+            progress[phase].update()
             print(f'Epoch {epoch + 1}/{num_epochs}, {phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
         
         print()
         
         # Apply learning rate scheduling if needed
-        if scheduler != None:
-            scheduler.step()
+        # if epoch >= 29:
+        #     if scheduler != None:
+        #         scheduler.step()
             
         # Log the loss and accuracy values at the end of each epoch
         wandb.log({
@@ -178,18 +180,16 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # print(device)
     
-    scheduler = None
-    
     # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.inceptionv3_pretrained(num_classes)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes)
    
-    # Initialize WandB  run
+    # Initialize WandB run
     wandb.login()
     parameters['batch_size'] = batch_size; parameters['epochs'] = num_epochs
 
     run = wandb.init(
         project="masters", # set project
-        notes=sys.argv[2],
+        notes=sys.argv[1],
         config=parameters) # Track hyperparameters and run metadata
     
     # Save data split

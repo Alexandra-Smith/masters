@@ -91,7 +91,8 @@ def resnet18(num_classes):
     learning_rate = 1e-5
     weight_decay = 1e-4
     # learning_rate_decay = 0.85
-    parameters = {"learning_rate": learning_rate, "weight_decay": weight_decay}
+    # parameters = {"learning_rate": learning_rate, "weight_decay": weight_decay}
+    parameters = {"learning_rate": learning_rate}
 
     model = models.resnet18(weights='DEFAULT')
     
@@ -99,8 +100,10 @@ def resnet18(num_classes):
     for param in model.parameters():
         param.requires_grad = False
         
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, num_classes)
+    model.fc = nn.Sequential(
+        nn.Dropout(p=0.7),
+        nn.Linear(model.fc.in_features, num_classes),
+        )
 
     # Set the last 10 layers to trainable
     for param in list(model.parameters())[-10:]:
@@ -121,7 +124,6 @@ def resnet18(num_classes):
 
     optimiser = optim.Adam(params=model.parameters(),
                            lr=learning_rate,
-                           weight_decay=weight_decay
                           )
     # scheduler = lr_scheduler.ExponentialLR(optimizer=optimiser, gamma=learning_rate_decay)
     # Setup the loss fxn
@@ -133,9 +135,9 @@ def resnet18(num_classes):
 def resnet50(num_classes):
     # Model parameters
     learning_rate = 1e-6
-    weight_decay = 1e-4
+    # weight_decay = 1e-4
     # learning_rate_decay = 0.85
-    parameters = {"learning_rate": learning_rate, "weight_decay": weight_decay}
+    parameters = {"learning_rate": learning_rate}
 
     model = models.resnet50(weights='DEFAULT')
     
@@ -153,7 +155,6 @@ def resnet50(num_classes):
     # Setup optimiser
     optimiser = optim.Adam(params=model.parameters(),
                            lr=learning_rate,
-                           weight_decay=weight_decay
                           )
     # Setup the loss fxn
     criterion = nn.CrossEntropyLoss()
@@ -187,34 +188,44 @@ def resnet18full(num_classes):
 def INCEPTIONv3(num_classes):
 
     # Hyperparameters
-    WEIGHT_DECAY = 0.9                  # Decay term for RMSProp.
-    # weight_decay = 0.00004?
-    # from inception_v3_parameters
-    MOMENTUM = 0.9                      # Momentum in RMSProp.
-    EPSILON = 1.0                       # Epsilon term for RMSProp.
-    INITIAL_LEARNING_RATE = 0.1         # Initial learning rate.
-    
-#     NUM_EPOCHS_PER_DECAY = 30.0         # Epochs after which learning rate decays.
-#     LEARNING_RATE_DECAY_FACTOR = 0.16   # Learning rate decay factor.
+    # WEIGHT_DECAY = 0.9                  # Decay term for RMSProp.
+    # # weight_decay = 0.00004?
+    # # from inception_v3_parameters
+    # MOMENTUM = 0.9                      # Momentum in RMSProp.
+    # EPSILON = 1.0                       # Epsilon term for RMSProp.
+    # INITIAL_LEARNING_RATE = 0.1         # Initial learning rate.
+    # NUM_EPOCHS_PER_DECAY = 30.0         # Epochs after which learning rate decays.
+    # LEARNING_RATE_DECAY_FACTOR = 0.16   # Learning rate decay factor.
 
-    # model = InceptionV3()
+    # lr=0.1
+    # weight_decay=0.9
+    # momentum=0.9
+    # epsilon=1.0
+    
+    learning_rate=0.0001
+    momentum=0.9
+    parameters = {"learning_rate": learning_rate,
+                  "momentum": momentum
+                 }
+    
     model = InceptionV3(num_classes=num_classes)
     
-    optimiser = optim.RMSprop(model.parameters(), 
-                              lr=INITIAL_LEARNING_RATE, 
-                              momentum=MOMENTUM, 
-                              eps=EPSILON, 
-                              weight_decay=WEIGHT_DECAY)
+    # optimiser = optim.RMSprop(model.parameters(), 
+    #                           lr=lr, 
+    #                           momentum=momentum, 
+    #                           eps=epsilon, 
+    #                           weight_decay=weight_decay)
+    optimiser = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
     criterion = nn.CrossEntropyLoss()
     
-    parameters = {"learning_rate": INITIAL_LEARNING_RATE, "momentum": MOMENTUM, "epsilon": EPSILON, 'RMS_weight_decay': WEIGHT_DECAY}
+    # parameters = {"learning_rate": lr, "momentum": momentum, "epsilon": epsilon, 'RMS_weight_decay': weight_decay}
 
     return model, optimiser, criterion, parameters, None
 
 
 def shufflenet():
 
-    model = torch.hub.load('pytorch/vision:v0.10.0', 'shufflenet_v2_x1_0', pretrained=True)
+    model = torch.hub.load('pytorch/vision:v0.10.0', 'shufflenet_v2_x1_0', weights='DEFAULT')
 
     INITIAL_LEARNING_RATE=5e-5
     WEIGHT_DECAY=0.9
@@ -234,22 +245,28 @@ def shufflenet():
 def inceptionv3_pretrained(num_classes):
     
     # Hyperparameters
-    WEIGHT_DECAY = 0.9                  # Decay term for RMSProp.
-    MOMENTUM = 0.9                      # Momentum in RMSProp.
-    EPSILON = 1.0                       # Epsilon term for RMSProp. (Alpha?)
-    INITIAL_LEARNING_RATE = 0.1         # Initial learning rate.
+#     WEIGHT_DECAY = 0.9                  # Decay term for RMSProp.
+#     MOMENTUM = 0.9                      # Momentum in RMSProp.
+#     EPSILON = 1.0                       # Epsilon term for RMSProp. (Alpha?)
+#     INITIAL_LEARNING_RATE = 0.1         # Initial learning rate.
 
-    LEARNING_RATE_DECAY_FACTOR = 0.16
-    NUM_EPOCHS_PER_DECAY = 30.0         # Epochs after which learning rate decays.
+#     LEARNING_RATE_DECAY_FACTOR = 0.16
+#     NUM_EPOCHS_PER_DECAY = 30.0         # Epochs after which learning rate decays.
     
-    parameters = {"learning_rate": INITIAL_LEARNING_RATE,
-                  "momentum": MOMENTUM, 
-                  "epsilon": EPSILON, 
-                  "RMS_weight_decay": WEIGHT_DECAY, 
-                  "learning_rate_decay": LEARNING_RATE_DECAY_FACTOR, 
-                  # "num_epochs_decay": NUM_EPOCHS_PER_DECAY
+#     parameters = {"learning_rate": INITIAL_LEARNING_RATE,
+#                   "momentum": MOMENTUM, 
+#                   "epsilon": EPSILON, 
+#                   "RMS_weight_decay": WEIGHT_DECAY, 
+#                   "learning_rate_decay": LEARNING_RATE_DECAY_FACTOR, 
+#                   "num_epochs_decay": NUM_EPOCHS_PER_DECAY
+#                  }
+    
+    lr=0.0001
+    momentum=0.9
+    parameters = {"learning_rate": lr,
+                  "momentum": momentum
                  }
-
+    
     # Define the model architecture  
     model = torch.hub.load('pytorch/vision:v0.6.0', 'inception_v3', weights='DEFAULT') # pre-trained model
     
@@ -266,12 +283,13 @@ def inceptionv3_pretrained(num_classes):
     # )
     
     model.fc = nn.Sequential(
-        # nn.Linear(model.fc.in_features, 10),
-        nn.Linear(model.fc.in_features, num_classes)
+        nn.Linear(model.fc.in_features, 2048),
+        nn.Dropout(p=0.7),
+        nn.Linear(2048, num_classes)
     )
     
     # Set the last n layers to trainable
-    for param in list(model.parameters())[-3:]:
+    for param in list(model.parameters())[-1:]:
         param.requires_grad = True
     
     optimiser = optim.RMSprop(filter(lambda p: p.requires_grad, model.parameters()), 
