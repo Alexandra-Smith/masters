@@ -1,0 +1,127 @@
+{
+    "os": "Linux-5.4.0-148-generic-x86_64-with-glibc2.31",
+    "python": "3.9.7",
+    "heartbeatAt": "2023-07-23T10:19:38.557890",
+    "startedAt": "2023-07-23T10:19:37.721868",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "Gamble implementation, all augs incl. jitter"
+    ],
+    "state": "running",
+    "program": "/home/21576262@su/masters/src/inception_training.py",
+    "codePath": "src/inception_training.py",
+    "git": {
+        "remote": "https://github.com/Alexandra-Smith/masters.git",
+        "commit": "a96f1cef2783f18f92e5f0069ece90829c33e29a"
+    },
+    "email": "alexandrasmith0904@gmail.com",
+    "root": "/home/21576262@su/masters",
+    "host": "jupyter-21576262",
+    "username": "21576262@su",
+    "executable": "/opt/conda/bin/python3",
+    "cpu_count": 8,
+    "cpu_count_logical": 16,
+    "cpu_freq": {
+        "current": 2.769875,
+        "min": 800.0,
+        "max": 4800.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2.918,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.353,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.385,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.079,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.628,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.927,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.03,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.272,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.75,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.09,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.855,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.196,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 3.599,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.846,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.731,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 1.659,
+            "min": 800.0,
+            "max": 4800.0
+        }
+    ],
+    "disk": {
+        "total": 938.3294372558594,
+        "used": 158.1972885131836
+    },
+    "gpu": "NVIDIA GeForce RTX 2080 SUPER",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 2080 SUPER",
+            "memory_total": 8589934592
+        }
+    ],
+    "memory": {
+        "total": 62.530460357666016
+    }
+}

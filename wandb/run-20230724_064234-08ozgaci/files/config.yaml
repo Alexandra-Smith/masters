@@ -1,0 +1,51 @@
+wandb_version: 1
+
+initial_learning_rate:
+  desc: null
+  value: 0.1
+learning_rate_decay:
+  desc: null
+  value: 0.16
+momentum:
+  desc: null
+  value: 0.9
+epsilon:
+  desc: null
+  value: 1
+RMS_decay/alpha:
+  desc: null
+  value: 0.9
+weight_decay/L2:
+  desc: null
+  value: 4.0e-05
+batch_size:
+  desc: null
+  value: 32
+epochs:
+  desc: null
+  value: 25
+_wandb:
+  desc: null
+  value:
+    python_version: 3.9.7
+    cli_version: 0.15.5
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1690180954.206388
+    t:
+      1:
+      - 1
+      - 41
+      - 55
+      2:
+      - 1
+      - 41
+      - 55
+      3:
+      - 16
+      - 23
+      4: 3.9.7
+      5: 0.15.5
+      8:
+      - 5
