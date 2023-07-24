@@ -16,6 +16,7 @@ class CustomDataset(Dataset):
 
         self.imgs = [] # Keeps image paths to load in the __getitem__ method
         self.labels = []
+        self.cases = []
         # self.HER2_labels = []
 
         # df_her2_status = get_her2_status_list()
@@ -24,6 +25,7 @@ class CustomDataset(Dataset):
         for i, (img_folder, label_file) in enumerate(zip(img_folders, label_files)):
             # print("Patch directory", img_folder, "\nLabel file", label_file)
             labels_pt = torch.load(label_file) # Load .pt file
+            self.cases.append(img_folder.split('/')[-1])
             # Run through all patches from the case folder
             for i, img in enumerate(os.listdir(img_folder)):
                 if os.path.isfile(os.path.join(img_folder, img)) and os.path.isfile(label_file):
@@ -165,26 +167,47 @@ def define_transforms(PATCH_SIZE, isResNet=False, isInception=False):
         INPUT_SIZE=PATCH_SIZE
     
     # Initialise data transforms
-    data_transforms = {
-        'train': transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
-            transforms.ToTensor(),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomVerticalFlip(),
-            RandomSpecificRotation(),
-            transforms.ColorJitter(brightness=[0, 0.25], contrast=[0.25, 1.75], saturation=[0.75, 1.25], hue=0.04),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) if isInception else None # inception
-        ]),
-        'val': transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) if isInception else None # inception
-        ]),
-        'test' : transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) if isInception else None # inception
-        ])
-    }
-    
+    if isInception:
+        data_transforms = {
+            'train': transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor(),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                RandomSpecificRotation(),
+                transforms.ColorJitter(brightness=0.25, contrast=[0.25, 1.75], saturation=[0.75, 1.25], hue=0.04),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) #inception
+            ]),
+            'val': transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            ]),
+            'test' : transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            ])
+        }
+    else:
+         data_transforms = {
+            'train': transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor(),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                RandomSpecificRotation(),
+                transforms.ColorJitter(brightness=0.25, contrast=[0.25, 1.75], saturation=[0.75, 1.25], hue=0.04)
+            ]),
+            'val': transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor()
+            ]),
+            'test' : transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor()
+            ])
+        }
+        
+
     return data_transforms

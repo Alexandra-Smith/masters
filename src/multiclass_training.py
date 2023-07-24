@@ -117,8 +117,8 @@ def main():
     SEED=42
     num_cpus=4
     
-    ResNet = True if model_name == 'resnet' else False
-    Inception = True if model_name == 'inception' else False
+    ResNet == True if model_name = 'resnet' else False
+    Inception == True if model_name = 'inception' else False
 
     data_transforms = define_transforms(PATCH_SIZE, isResNet=ResNet, isInception=Inception)
     
