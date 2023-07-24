@@ -175,7 +175,7 @@ def define_transforms(PATCH_SIZE, isResNet=False, isInception=False):
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomVerticalFlip(),
                 RandomSpecificRotation(),
-                transforms.ColorJitter(brightness=0.25, contrast=[0.25, 1.75], saturation=[0.75, 1.25], hue=0.04),
+                transforms.ColorJitter(brightness=0.25, contrast=[0.5, 1.75], saturation=[0.75, 1.25], hue=0.04),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) #inception
             ]),
             'val': transforms.Compose([
@@ -197,7 +197,7 @@ def define_transforms(PATCH_SIZE, isResNet=False, isInception=False):
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomVerticalFlip(),
                 RandomSpecificRotation(),
-                transforms.ColorJitter(brightness=0.25, contrast=[0.25, 1.75], saturation=[0.75, 1.25], hue=0.04)
+                transforms.ColorJitter(brightness=0.25, contrast=[0.5, 1.75], saturation=[0.75, 1.25], hue=0.04)
             ]),
             'val': transforms.Compose([
                 transforms.Resize(INPUT_SIZE),
