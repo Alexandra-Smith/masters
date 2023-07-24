@@ -3,7 +3,9 @@ import os
 import torch
 import random
 from torch.utils.data import Dataset
+from torchvision import transforms
 from PIL import Image
+import torchvision.transforms.functional as TF
 import pandas as pd
 
 class CustomDataset(Dataset):
@@ -137,3 +139,52 @@ def get_her2_status_list():
     dict = df.set_index('Case ID').to_dict()['Clinical.HER2.status']
 
     return dict
+
+class RandomSpecificRotation:
+    def __init__(self, probability=0.5):
+        self.probability = probability
+
+    def __call__(self, img):
+        # Randomly decide whether to apply the rotation or not based on the probability
+        if random.random() < self.probability:
+            # Choose a random rotation angle from 90, 180, or 270 degrees
+            angle = random.choice([90, 180, 270])
+
+            # Apply the rotation to the image
+            img = TF.rotate(img, angle)
+
+        return img
+
+def define_transforms(PATCH_SIZE, isResNet=False, isInception=False):
+    
+    if isInception:
+        INPUT_SIZE=299
+    elif isResNet:
+        INPUT_SIZE=224
+    else:
+        INPUT_SIZE=PATCH_SIZE
+    
+    # Initialise data transforms
+    data_transforms = {
+        'train': transforms.Compose([
+            transforms.Resize(INPUT_SIZE),
+            transforms.ToTensor(),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomVerticalFlip(),
+            RandomSpecificRotation(),
+            transforms.ColorJitter(brightness=[0, 0.25], contrast=[0.25, 1.75], saturation=[0.75, 1.25], hue=0.04),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) if isInception else None # inception
+        ]),
+        'val': transforms.Compose([
+            transforms.Resize(INPUT_SIZE),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) if isInception else None # inception
+        ]),
+        'test' : transforms.Compose([
+            transforms.Resize(INPUT_SIZE),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) if isInception else None # inception
+        ])
+    }
+    
+    return data_transforms

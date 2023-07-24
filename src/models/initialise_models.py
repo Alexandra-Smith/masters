@@ -202,23 +202,42 @@ def INCEPTIONv3(num_classes):
     # momentum=0.9
     # epsilon=1.0
     
-    learning_rate=0.0001
+    # initial_learning_rate=0.1
+    # learning_rate_decay=0.16
+    
+    learning_rate =  0.0001
+    
     momentum=0.9
+    epsilon=1
+    rms_decay=0.9
+    
+    weight_decay=4e-05 # L2
+    
+    # learning_rate=0.0001
+    # momentum=0.9
+    # parameters = {"learning_rate": learning_rate,
+    #               "momentum": momentum
+    #              }
     parameters = {"learning_rate": learning_rate,
-                  "momentum": momentum
-                 }
+                  # "learning_rate_decay": learning_rate_decay,
+                  "momentum": momentum, 
+                  "epsilon": epsilon, 
+                  "RMS_decay/alpha": rms_decay,
+                  "weight_decay/L2": weight_decay}
     
     model = InceptionV3(num_classes=num_classes)
     
-    # optimiser = optim.RMSprop(model.parameters(), 
-    #                           lr=lr, 
-    #                           momentum=momentum, 
-    #                           eps=epsilon, 
-    #                           weight_decay=weight_decay)
-    optimiser = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
-    criterion = nn.CrossEntropyLoss()
+    optimiser = optim.RMSprop(model.parameters(), 
+                              lr=learning_rate,
+                              alpha=rms_decay,
+                              momentum=momentum, 
+                              eps=epsilon, 
+                              weight_decay=weight_decay)
+    # optimiser = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
     
-    # parameters = {"learning_rate": lr, "momentum": momentum, "epsilon": epsilon, 'RMS_weight_decay': weight_decay}
+    # scheduler = optim.lr_scheduler.ExponentialLR(optimiser, gamma=learning_rate_decay)
+    
+    criterion = nn.CrossEntropyLoss()
 
     return model, optimiser, criterion, parameters, None
 

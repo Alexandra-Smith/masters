@@ -5,7 +5,6 @@ train_model.py | 'notes about run for wandb'
 import os
 import sys
 import torch
-from torchvision import transforms
 from tqdm import tqdm
 import torch.utils.data as data_utils
 import wandb
@@ -13,7 +12,7 @@ import json
 import pandas as pd
 from models import initialise_models
 import torchinfo
-from data.data_loading import CustomDataset, split_data
+from data.data_loading import CustomDataset, split_data, define_transforms
 
 
 def train_model(model, device, dataloaders, progress, criterion, optimizer, mode='tissueclass', num_epochs=25, scheduler=None):
@@ -42,6 +41,8 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
                 if mode == 'her2status':
                     her2_labels = her2_labels.to(device)
                 
+                progress[phase].update()
+                
                 optimizer.zero_grad()
                 
                 with torch.set_grad_enabled(phase == 'train'):
@@ -66,28 +67,22 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
                 if mode == 'tissueclass':
                     running_corrects += torch.sum(preds == labels.data)
                 if mode == 'her2status':
-                    running_corrects += torch.sum(preds == her2_labels.data)
-                
+                    running_corrects += torch.sum(preds == her2_labels.data)    
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)
-            
             if phase == 'train':
                 loss_train = epoch_loss
                 acc_train = epoch_acc
             if phase == 'val':
                 loss_valid = epoch_loss
                 acc_valid = epoch_acc
-            
-            progress[phase].set_postfix({'accuracy': epoch_acc})
-            progress[phase].update()
             print(f'Epoch {epoch + 1}/{num_epochs}, {phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
         
         print()
         
         # Apply learning rate scheduling if needed
-        # if epoch >= 29:
-        #     if scheduler != None:
-        #         scheduler.step()
+        if scheduler != None:
+            scheduler.step()
             
         # Log the loss and accuracy values at the end of each epoch
         wandb.log({
@@ -104,13 +99,14 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
 # -------------------------------------------------------------------------------
 
 def main():
+    
+    torch.cuda.empty_cache()
     ##### SET PARAMETERS #####
     
     # Number of classes in the dataset
     num_classes = 2
-    # Batch size for training (change depending on how much memory you have)
+    # Batch size for training
     batch_size = 32
-    # batch_size = 128
     # Number of epochs to train for
     num_epochs = 25
     
@@ -121,35 +117,11 @@ def main():
     SEED=42
     num_cpus=4
     
-    INPUT_SIZE=299
-
-    # * can automate this
-    # Initialise data transforms
-    data_transforms = {
-        'train': transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomVerticalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
-        ]),
-        'val': transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
-        ]),
-        'test' : transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
-        ])
-    }
+    data_transforms = define_transforms(PATCH_SIZE, isInception=True)
     
     # using full set of data
     img_dir = '/home/21576262@su/masters/data/patches/'
     labels_dir = '/home/21576262@su/masters/data/labels/' 
-    # img_dir = '/Volumes/AlexS/MastersData/processed/patches/'
-    # labels_dir = '/Volumes/AlexS/MastersData/processed/labels/'
 
     split=[70, 15, 15] # for splitting into train/val/test
 
@@ -207,15 +179,8 @@ def main():
     # and send model to gpu
     model = train_model(model, device, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
     
-    # Save data split
-    # data_split = {'train': train_img_folders,
-    #               'val': val_img_folders,
-    #               'test': test_img_folders
-    #              }
-    # with open('/home/21576262@su/masters/models/data_splits/' + str(run.name) + '.json', 'w') as file:
-    #     json.dump(data_split, file)
     # Save model
-    torch.save(model.state_dict(), '/home/21576262@su/masters/models' + str(run.name) + '_model_weights.pth')
+    torch.save(model.state_dict(), '/home/21576262@su/masters/models/' + str(run.name) + '_model_weights.pth')
 
 if __name__ == '__main__':
     main()

@@ -6,14 +6,13 @@ import os
 import sys
 import torch
 import json
-from torchvision import transforms
 from tqdm import tqdm
 import torch.utils.data as data_utils
 import wandb
 import pandas as pd
 from models import initialise_models
 import torchinfo
-from data.data_loading import CustomDataset, split_data
+from data.data_loading import CustomDataset, split_data, define_transforms
 
 
 def train_model(model, device, dataloaders, progress, criterion, optimizer, mode='tissueclass', num_epochs=25, scheduler=None):
@@ -103,9 +102,10 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
 
 def main():
     ##### SET PARAMETERS #####
+    
     # Number of classes in the dataset
     num_classes = 2
-    # Batch size for training (change depending on how much memory you have)
+    # Batch size for training
     batch_size = 32
     # Number of epochs to train for
     num_epochs = 25
@@ -117,33 +117,10 @@ def main():
     SEED=42
     num_cpus=4
     
-    if model_name == 'inception': 
-        INPUT_SIZE=299
-    elif model_name == 'resnet':
-        INPUT_SIZE=224
-    else: INPUT_SIZE=PATCH_SIZE
+    ResNet == True if model_name = 'resnet' else False
+    Inception == True if model_name = 'inception' else False
 
-    # * can automate this
-    # Initialise data transforms
-    data_transforms = {
-        'train': transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomVerticalFlip(),
-            transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
-        ]),
-        'val': transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
-            transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
-        ]),
-        'test' : transforms.Compose([
-            transforms.Resize(INPUT_SIZE),
-            transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
-        ])
-    }
+    data_transforms = define_transforms(PATCH_SIZE, isResNet=ResNet, isInception=Inception)
     
     # using full set of data
     img_dir = '/home/21576262@su/masters/data/patches/'
