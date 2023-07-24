@@ -56,10 +56,6 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
                         loss = criterion(outputs, her2_labels)
                     
                     if phase == 'train':
-                        # L2 regularisation
-                        l2_lambda = 1e-4
-                        l2_norm = sum(p.pow(2.0).sum() for p in model.parameters())
-                        loss += (l2_lambda * l2_norm)
                         loss.backward()
                         optimizer.step()
                         
@@ -67,11 +63,9 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
                 if mode == 'tissueclass':
                     running_corrects += torch.sum(preds == labels.data)
                 if mode == 'her2status':
-                    running_corrects += torch.sum(preds == her2_labels.data)
-                
+                    running_corrects += torch.sum(preds == her2_labels.data)  
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
-            epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)
-            
+            epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)   
             if phase == 'train':
                 loss_train = epoch_loss
                 acc_train = epoch_acc
@@ -104,7 +98,7 @@ def main():
     ##### SET PARAMETERS #####
     
     # Number of classes in the dataset
-    num_classes = 2
+    num_classes = 3 # 0=background, 1=negative, 2=positive
     # Batch size for training
     batch_size = 32
     # Number of epochs to train for

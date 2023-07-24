@@ -209,5 +209,4 @@ def define_transforms(PATCH_SIZE, isResNet=False, isInception=False):
             ])
         }
         
-
     return data_transforms
