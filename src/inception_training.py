@@ -11,7 +11,7 @@ import wandb
 import json
 import pandas as pd
 from models import initialise_models
-import torchinfo
+# import torchinfo
 from data.data_loading import CustomDataset, split_data, define_transforms
 
 

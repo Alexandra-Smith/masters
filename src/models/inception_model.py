@@ -1,11 +1,11 @@
 import torch
 from torch import nn, Tensor
 import torch.nn.functional as F
-from torchinfo import summary as Model_Summary
+# from torchinfo import summary as Model_Summary
 import torch.optim as optim
 from typing import Optional
-import torchinfo
-from torchsummary import summary
+# import torchinfo
+# from torchsummary import summary
 
 # Convolutional block
 class ConvBlock(nn.Module):
