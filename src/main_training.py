@@ -11,7 +11,7 @@ import torch.utils.data as data_utils
 import wandb
 import pandas as pd
 from models import initialise_models
-import torchinfo
+# import torchinfo
 from data.data_loading import CustomDataset, split_data, define_transforms
 
 
@@ -158,6 +158,7 @@ def main():
     # device = torch.device("mps" if torch.has_mps else "cpu") # run on mac
     # print(device)
     
+    # checkpoint = '/home/21576262@su/masters/models/splendid-dawn-22_model_weights.pth'
     scheduler = None
     # Initialize the model for this run
     model, optimiser, criterion, parameters, scheduler = initialise_models.resnet18(num_classes)

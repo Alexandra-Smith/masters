@@ -11,7 +11,6 @@ import wandb
 import json
 import pandas as pd
 from models import initialise_models
-# import torchinfo
 from data.data_loading import CustomDataset, split_data, define_transforms
 
 
@@ -152,8 +151,9 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # print(device)
     
+    # checkpoint = '/home/21576262@su/masters/models/earthy-field-65_model_weights.pth' # Gamble
     # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.inceptionresnetv2(num_classes, checkpoint_path=None)
    
     # Initialize WandB run
     wandb.login()
