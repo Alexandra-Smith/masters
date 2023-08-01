@@ -1,0 +1,119 @@
+{
+    "os": "Linux-5.4.0-144-generic-x86_64-with-glibc2.31",
+    "python": "3.9.7",
+    "heartbeatAt": "2023-07-28T08:23:13.374472",
+    "startedAt": "2023-07-28T08:23:12.373457",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "inception-resnetv2, first try, finetune last layer, exp decay every 2 epochs"
+    ],
+    "state": "running",
+    "program": "/home/21576262@su/masters/src/inception_training.py",
+    "codePath": "src/inception_training.py",
+    "git": {
+        "remote": "https://github.com/Alexandra-Smith/masters.git",
+        "commit": "d6e1a3285c09b6e53eaba0dd007dc29a6f032004"
+    },
+    "email": "alexandrasmith0904@gmail.com",
+    "root": "/home/21576262@su/masters",
+    "host": "jupyter-21576262",
+    "username": "21576262@su",
+    "executable": "/opt/conda/bin/python3",
+    "cpu_count": 8,
+    "cpu_count_logical": 16,
+    "cpu_freq": {
+        "current": 3.0417500000000004,
+        "min": 800.0,
+        "max": 4800.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2.616,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.106,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.168,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.722,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.324,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.591,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.972,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.228,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 3.74,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.811,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.313,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 3.129,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.134,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 4.388,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.164,
+            "min": 800.0,
+            "max": 4800.0
+        },
+        {
+            "current": 2.262,
+            "min": 800.0,
+            "max": 4800.0
+        }
+    ],
+    "disk": {
+        "total": 938.3294372558594,
+        "used": 354.81468963623047
+    },
+    "memory": {
+        "total": 62.5305290222168
+    }
+}
