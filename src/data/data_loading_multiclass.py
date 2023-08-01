@@ -3,10 +3,12 @@ import os
 import torch
 import random
 from torch.utils.data import Dataset
+from torchvision import transforms
 from PIL import Image
+import torchvision.transforms.functional as TF
 import pandas as pd
 
-class CustomDataset(Dataset):
+class CustomDatasetMulti(Dataset):
     def __init__(self, img_folders, label_files, transform=None):
         self.img_folders = img_folders
         self.label_files = label_files

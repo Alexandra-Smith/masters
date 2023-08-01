@@ -109,14 +109,19 @@ def main():
     # Number of epochs to train for
     num_epochs = 25
     
-    model_name = 'inception'
+    model_name = 'inceptionresnet'
+    
+    InceptionResnet = True if model_name == 'inceptionresnet' else False
+    Inception = True if model_name == 'inception' else False
+    
+    print(f"Model name: {model_name}")
     
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
     SEED=42
     num_cpus=4
     
-    data_transforms = define_transforms(PATCH_SIZE, isInception=True)
+    data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
     
     # using full set of data
     img_dir = '/home/21576262@su/masters/data/patches/'

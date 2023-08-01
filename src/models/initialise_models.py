@@ -339,23 +339,111 @@ def inceptionv3_pretrained(num_classes):
     return model, optimiser, criterion, parameters, scheduler
 
 def inceptionresnetv2(num_classes, checkpoint_path=None):
- 
-    initial_learning_rate = 0.0002
-    learning_rate_decay = 0.7
-    weight_decay=4e-05 # L2
     
-    parameters = {"learning_rate": initial_learning_rate,
+    # learning_rate=1e-5
+    
+    learning_rate=0.0055
+    learning_rate_decay=0.16
+    
+    weight_decay=4e-05
+    
+    parameters = {"learning_rate": learning_rate,
                   "learning_rate_decay": learning_rate_decay,
                   "weight_decay/L2": weight_decay}
     
-    # model = timm.create_model('inception_v4', pretrained=True, num_classes=num_classes)    
-    model = timm.create_model('inception_resnet_v2', pretrained=True, num_classes=num_classes)
+    # parameters = {"learning_rate": learning_rate,
+    #               "weight_decay": weight_decay}
+                  
+    model = timm.create_model('inception_resnet_v2', pretrained=False, num_classes=num_classes)
     
-    optimiser = optim.Adam(model.parameters(), lr=initial_learning_rate, weight_decay=weight_decay)
-
-    # Create the custom learning rate scheduler
-    scheduler = ExponentialDecayStep(optimiser, decay_factor=learning_rate_decay, decay_step=2)
-
+    # # Freeze all parameters
+    # for param in model.parameters():
+    #     param.requires_grad = False
+    
+    model.classif = nn.Sequential(
+        nn.Dropout(p=0.7),
+        nn.Linear(model.get_classifier().in_features, num_classes)
+    )
+    # # Set the last n layers to trainable
+    # for param in list(model.parameters())[-10:]:
+    #     param.requires_grad = True
+    
+    optimiser = optim.Adam(model.parameters(), 
+                           lr=learning_rate, 
+                           weight_decay=weight_decay)
+    
+    # optimiser = optim.RMSprop(model.parameters(), 
+    #                           lr=initial_learning_rate,
+    #                           alpha=rms_decay,
+    #                           momentum=momentum, 
+    #                           eps=epsilon, 
+    #                           weight_decay=weight_decay)
+    
+    scheduler = optim.lr_scheduler.ExponentialLR(optimiser, gamma=learning_rate_decay)
+                           
     criterion = nn.CrossEntropyLoss()
+    
+    
+    ####################################################
+#     initial_learning_rate=0.0055
+#     learning_rate_decay=0.16
+    
+#     momentum=0.9
+#     epsilon=1
+#     rms_decay=0.9
+    
+#     weight_decay=4e-05 # L2
+    
+#     parameters = {"learning_rate": initial_learning_rate,
+#                   "learning_rate_decay": learning_rate_decay,
+#                   "momentum": momentum, 
+#                   "epsilon": epsilon, 
+#                   "RMS_decay/alpha": rms_decay,
+#                   "weight_decay/L2": weight_decay}
 
-    return model, optimiser, criterion, parameters, scheduler
+# #     initial_learning_rate = 0.0002
+# #     learning_rate_decay = 0.7
+# #     weight_decay=4e-05 # L2
+    
+# #     parameters = {"learning_rate": initial_learning_rate,
+# #                   "learning_rate_decay": learning_rate_decay,
+# #                   "weight_decay/L2": weight_decay}
+    
+#     # model = timm.create_model('inception_v4', pretrained=True, num_classes=num_classes)    
+#     model = timm.create_model('inception_resnet_v2', pretrained=True, num_classes=num_classes)
+#     # Freeze all parameters
+#     for param in model.parameters():
+#         param.requires_grad = False
+
+#     # model.fc = nn.Sequential(
+#     #     nn.Linear(model.fc.in_features, 1000),
+#     #     nn.Dropout(p=0.7),
+#     #     nn.Linear(1000, num_classes)
+#     # )
+#     # Set the last n layers to trainable
+#     for param in list(model.parameters())[-3:]:
+#         param.requires_grad = True
+        
+#     # num_ftrs = model.fc.in_features
+#     # model.fc = nn.Linear(num_ftrs, num_classes)
+    
+#     # optimiser = optim.Adam(model.parameters(), 
+#     #                        lr=initial_learning_rate, 
+#     #                        weight_decay=weight_decay)
+
+#     # Create the custom learning rate scheduler
+#     # scheduler = ExponentialDecayStep(optimiser, decay_factor=learning_rate_decay, decay_step=2)
+    
+#     optimiser = optim.RMSprop(model.parameters(), 
+#                               lr=initial_learning_rate,
+#                               alpha=rms_decay,
+#                               momentum=momentum, 
+#                               eps=epsilon, 
+#                               weight_decay=weight_decay)
+#     # optimiser = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
+    
+#     scheduler = optim.lr_scheduler.ExponentialLR(optimiser, gamma=learning_rate_decay)
+    
+#     criterion = nn.CrossEntropyLoss()
+
+    return model, optimiser, criterion, parameters, None

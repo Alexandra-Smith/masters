@@ -157,12 +157,14 @@ class RandomSpecificRotation:
 
         return img
 
-def define_transforms(PATCH_SIZE, isResNet=False, isInception=False):
+def define_transforms(PATCH_SIZE, isResNet=False, isInception=False, isInceptionResnet=False):
     
     if isInception:
         INPUT_SIZE=299
     elif isResNet:
         INPUT_SIZE=224
+    elif isInceptionResnet:
+        INPUT_SIZE=299
     else:
         INPUT_SIZE=PATCH_SIZE
     
@@ -187,6 +189,28 @@ def define_transforms(PATCH_SIZE, isResNet=False, isInception=False):
                 transforms.Resize(INPUT_SIZE),
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+            ])
+        }
+    elif isInceptionResnet:
+        data_transforms = {
+            'train': transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor(),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                RandomSpecificRotation(),
+                transforms.ColorJitter(brightness=0.25, contrast=[0.5, 1.75], saturation=[0.75, 1.25], hue=0.04),
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) #inception
+            ]),
+            'val': transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor(),
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # inception
+            ]),
+            'test' : transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor(),
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # inception
             ])
         }
     else:

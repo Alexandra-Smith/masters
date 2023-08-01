@@ -11,11 +11,11 @@ import torch.utils.data as data_utils
 import wandb
 import pandas as pd
 from models import initialise_models
-import torchinfo
 from data.data_loading import CustomDataset, split_data, define_transforms
+from data.data_loading_multiclass import CustomDatasetMulti, split_data, define_transforms
 
 
-def train_model(model, device, dataloaders, progress, criterion, optimizer, mode='tissueclass', num_epochs=25, scheduler=None):
+def train_model(model, device, dataloaders, progress, criterion, optimizer, mode='her2status', num_epochs=25, scheduler=None):
     model = model.to(device)
     if mode not in ['tissueclass', 'her2status']:
         raise Exception("ERROR: model mode given not one of 'tissueclass' or 'her2status'.")
@@ -35,9 +35,10 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
             running_corrects = 0
             
             # for inputs, labels, her2_labels in dataloaders[phase]:
-            for inputs, labels in dataloaders[phase]:
+            for inputs, labels, her2_labels in dataloaders[phase]:
                 inputs = inputs.to(device)
-                labels = labels.to(device)
+                if mode == 'tissueclass': 
+                    labels = labels.to(device)
                 if mode == 'her2status':
                     her2_labels = her2_labels.to(device)
                 
@@ -102,7 +103,7 @@ def main():
     # Batch size for training
     batch_size = 32
     # Number of epochs to train for
-    num_epochs = 25
+    num_epochs = 50
     
     model_name = str(sys.argv[1])
     
@@ -111,8 +112,8 @@ def main():
     SEED=42
     num_cpus=4
     
-    ResNet == True if model_name = 'resnet' else False
-    Inception == True if model_name = 'inception' else False
+    ResNet = True if model_name == 'resnet' else False
+    Inception = True if model_name == 'inception' else False
 
     data_transforms = define_transforms(PATCH_SIZE, isResNet=ResNet, isInception=Inception)
     
@@ -136,9 +137,9 @@ def main():
     test_labels = [labels_dir + case + '.pt' for case in test_cases]
         
     image_datasets = {
-        'train': CustomDataset(train_img_folders, train_labels, transform=data_transforms['train']),
-        'val': CustomDataset(val_img_folders, val_labels, transform=data_transforms['val']),
-        'test': CustomDataset(test_img_folders, test_labels, transform=data_transforms['test'])
+        'train': CustomDatasetMulti(train_img_folders, train_labels, transform=data_transforms['train']),
+        'val': CustomDatasetMulti(val_img_folders, val_labels, transform=data_transforms['val']),
+        'test': CustomDatasetMulti(test_img_folders, test_labels, transform=data_transforms['test'])
     }
     # Create training, validation and test dataloaders
     dataloaders = {
@@ -154,7 +155,7 @@ def main():
     
     scheduler = None
     # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.resnet18(num_classes)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes, None)
     # print("\n TORCHINFO SUMMARY \n")
     # print(torchinfo.summary(model, (3, 299, 299), batch_dim=0, col_names=('input_size', 'output_size', 'num_params', 'kernel_size'), verbose=0))
    
