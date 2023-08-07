@@ -111,7 +111,7 @@ def split_all_data(patch_directory, split: list, seed):
     # test_patches = [len(os.listdir(patch_directory + folder)) for folder in test_cases]
     num_selected_test = sum([len(os.listdir(patch_directory + folder)) for folder in test_cases])
     # dict = {x: for x in ['train', 'val', 'test']}
-    print(f"Number of training patches: {num_selected_train} \nNumber of validation patches: {num_selected_val} \nNumber of test patches: {num_selected_test}")
+    # print(f"Number of training patches: {num_selected_train} \nNumber of validation patches: {num_selected_val} \nNumber of test patches: {num_selected_test}")
     return train_cases, val_cases, test_cases
 
 
@@ -236,7 +236,7 @@ def split_tumour_data(patch_directory, label_directory, split: list, seed):
     
     # test_patches = [len(os.listdir(patch_directory + folder)) for folder in test_cases]
     num_selected_test = sum([d[case] for case in test_cases])
-    print(f"Total tumour patches: {total_num_tumour_patches} \nNumber of training patches: {num_selected_train} \nNumber of validation patches {num_selected_val} \nNumber of test patches {num_selected_test}")
+    # print(f"Total tumour patches: {total_num_tumour_patches} \nNumber of training patches: {num_selected_train} \nNumber of validation patches {num_selected_val} \nNumber of test patches {num_selected_test}")
     
     return train_cases, val_cases, test_cases
 
@@ -370,6 +370,8 @@ def get_seg_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False
         'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
     }
     
+    print(f"Total tumour patches: {len(dataloaders['train'])*batch_size + len(dataloaders['val'])*batch_size + len(dataloaders['test'])*batch_size} \nNumber of training patches: {len(dataloaders['train'])*batch_size} \nNumber of validation patches {len(dataloaders['val'])*batch_size} \nNumber of test patches {len(dataloaders['test'])*batch_size}")
+    
     return train_cases, val_cases, test_cases, dataloaders
 
 
@@ -409,5 +411,7 @@ def get_her2status_dataloaders(batch_size, SEED, Inception=False, InceptionResne
         'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=num_cpus, shuffle=True),
         'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
     }
+    
+    print(f"Total tumour patches: {len(dataloaders['train'])*batch_size + len(dataloaders['val'])*batch_size + len(dataloaders['test'])*batch_size} \nNumber of training patches: {len(dataloaders['train'])*batch_size} \nNumber of validation patches {len(dataloaders['val'])*batch_size} \nNumber of test patches {len(dataloaders['test'])*batch_size}")
     
     return train_cases, val_cases, test_cases, dataloaders
