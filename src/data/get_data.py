@@ -370,7 +370,7 @@ def get_seg_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False
         'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
     }
     
-    return dataloaders
+    return train_cases, val_cases, test_cases, dataloaders
 
 
 def get_her2status_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False):
@@ -410,4 +410,4 @@ def get_her2status_dataloaders(batch_size, SEED, Inception=False, InceptionResne
         'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
     }
     
-    return dataloaders
+    return train_cases, val_cases, test_cases, dataloaders

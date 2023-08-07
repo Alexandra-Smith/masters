@@ -1,6 +1,6 @@
 '''
 Run as:
-train_model.py | 'notes about run for wandb'
+train_model.py | run_group | 'notes about run for wandb'
 '''
 import os
 import sys
@@ -108,7 +108,7 @@ def main():
     # Number of epochs to train for
     num_epochs = 25
     
-    model_name = 'inceptionresnet'
+    model_name = 'inception'
     
     InceptionResnet = True if model_name == 'inceptionresnet' else False
     Inception = True if model_name == 'inception' else False
@@ -117,8 +117,8 @@ def main():
     
     SEED=42
     
-    # dataloaders = get_seg_dataloaders(batch_size, SEED, Inception=Inception, InceptionResnet=InceptionResnet)
-    dataloaders = get_her2status_dataloaders(batch_size, SEED, Inception=Inception, InceptionResnet=InceptionResnet)
+    # train_cases, val_cases, test_cases, dataloaders = get_seg_dataloaders(batch_size, SEED, Inception=Inception, InceptionResnet=InceptionResnet)
+    train_cases, val_cases, test_cases, dataloaders = get_her2status_dataloaders(batch_size, SEED, Inception=Inception, InceptionResnet=InceptionResnet)
 
     # Detect if there is a GPU available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -134,14 +134,15 @@ def main():
 
     run = wandb.init(
         project="masters", # set project
-        notes=sys.argv[1],
+        group=str(sys.argv[1]),
+        notes=sys.argv[2],
         config=parameters) # Track hyperparameters and run metadata
     
     # Save data split
     data_split = {'seed': SEED,
-                  'train': train_img_folders,
-                  'val': val_img_folders,
-                  'test': test_img_folders
+                  'train': train_cases,
+                  'val': val_cases,
+                  'test': test_cases
                  }
     with open('/home/21576262@su/masters/models/data_splits/' + str(run.name) + '.json', 'w') as file:
         json.dump(data_split, file)
