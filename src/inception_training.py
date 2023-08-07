@@ -6,12 +6,11 @@ import os
 import sys
 import torch
 from tqdm import tqdm
-import torch.utils.data as data_utils
 import wandb
 import json
 import pandas as pd
 from models import initialise_models
-from data.data_loading import CustomDataset, split_data, define_transforms
+from data.get_data import get_seg_dataloaders, get_her2status_dataloaders
 
 
 def train_model(model, device, dataloaders, progress, criterion, optimizer, mode='tissueclass', num_epochs=25, scheduler=None):
@@ -116,49 +115,18 @@ def main():
     
     print(f"Model name: {model_name}")
     
-    PATCH_SIZE=256
-    STRIDE=PATCH_SIZE
     SEED=42
-    num_cpus=4
     
-    data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
-    
-    # using full set of data
-    img_dir = '/home/21576262@su/masters/data/patches/'
-    labels_dir = '/home/21576262@su/masters/data/labels/' 
+    # dataloaders = get_seg_dataloaders(batch_size, SEED, Inception=Inception, InceptionResnet=InceptionResnet)
+    dataloaders = get_her2status_dataloaders(batch_size, SEED, Inception=Inception, InceptionResnet=InceptionResnet)
 
-    split=[70, 15, 15] # for splitting into train/val/test
-
-    train_cases, val_cases, test_cases = split_data(img_dir, split, SEED)
-
-    train_img_folders = [img_dir + case for case in train_cases]
-    val_img_folders = [img_dir + case for case in val_cases]
-    test_img_folders = [img_dir + case for case in test_cases]
-
-    # Contains the file path for each .pt file for the cases used in each of the sets
-    train_labels = [labels_dir + case + '.pt' for case in train_cases]
-    val_labels = [labels_dir + case + '.pt' for case in val_cases]
-    test_labels = [labels_dir + case + '.pt' for case in test_cases]
-
-    image_datasets = {
-        'train': CustomDataset(train_img_folders, train_labels, transform=data_transforms['train']),
-        'val': CustomDataset(val_img_folders, val_labels, transform=data_transforms['val']),
-        'test': CustomDataset(test_img_folders, test_labels, transform=data_transforms['test'])
-    }
-    # Create training, validation and test dataloaders
-    dataloaders = {
-        'train': data_utils.DataLoader(image_datasets['train'], batch_size=batch_size, num_workers=num_cpus, shuffle=True, drop_last=True),
-        'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=num_cpus, shuffle=True),
-        'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
-    }
-
-    # Detect if we have a GPU available
+    # Detect if there is a GPU available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # print(device)
     
     # checkpoint = '/home/21576262@su/masters/models/earthy-field-65_model_weights.pth' # Gamble
     # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.inceptionresnetv2(num_classes, checkpoint_path=None)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes, checkpoint_path=None)
    
     # Initialize WandB run
     wandb.login()

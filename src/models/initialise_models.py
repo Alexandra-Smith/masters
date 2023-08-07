@@ -222,6 +222,10 @@ def INCEPTIONv3(num_classes, checkpoint_path=None):
     # momentum=0.9
     # epsilon=1.0
     
+    # learning_rate =  0.0001
+    # initial_learning_rate=0.1
+    # learning_rate_decay=0.9
+    
     # Coudray
     # initial_learning_rate=0.1
     # learning_rate_decay=0.16
@@ -232,9 +236,7 @@ def INCEPTIONv3(num_classes, checkpoint_path=None):
     
     initial_learning_rate=0.0055
     learning_rate_decay=0.16
-    
-    # learning_rate =  0.0001
-    
+
     momentum=0.9
     epsilon=1
     rms_decay=0.9

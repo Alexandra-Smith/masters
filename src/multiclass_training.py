@@ -96,14 +96,18 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
 # -------------------------------------------------------------------------------
 
 def main():
+    
+    torch.cuda.empty_cache()
     ##### SET PARAMETERS #####
     
     # Number of classes in the dataset
-    num_classes = 3 # 0=background, 1=negative, 2=positive
+    num_classes = 3 # 0=normal, 1=negative, 2=positive
     # Batch size for training
     batch_size = 32
     # Number of epochs to train for
-    num_epochs = 50
+    num_epochs = 25
+    
+    print(f"Number of classes: {num_classes}")
     
     model_name = str(sys.argv[1])
     
@@ -165,6 +169,7 @@ def main():
 
     run = wandb.init(
         project="masters", # set project
+        group="multiclass",
         notes=sys.argv[2],
         config=parameters) # Track hyperparameters and run metadata
     
@@ -184,7 +189,6 @@ def main():
     
     # Save model
     torch.save(model.state_dict(), '/home/21576262@su/masters/models/' + str(run.name) + '_model_weights.pth')
-
 
 if __name__ == '__main__':
     main()

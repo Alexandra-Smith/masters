@@ -8,7 +8,7 @@ from PIL import Image
 import torchvision.transforms.functional as TF
 import pandas as pd
 
-class CustomDatasetMulti(Dataset):
+class HER2Dataset(Dataset):
     def __init__(self, img_folders, label_files, transform=None):
         self.img_folders = img_folders
         self.label_files = label_files
@@ -16,11 +16,10 @@ class CustomDatasetMulti(Dataset):
 
         self.imgs = [] # Keeps image paths to load in the __getitem__ method
         self.labels = []
-        self.cases = [] # All cases in this set
-        self.img_cases=[] # Image case for each patch
-        self.HER2_labels = []
+        self.cases = []
+        # self.HER2_labels = []
 
-        df_her2_status = get_her2_status_list()
+        # df_her2_status = get_her2_status_list()
 
         # Load images and corresponding labels
         for i, (img_folder, label_file) in enumerate(zip(img_folders, label_files)):
@@ -32,16 +31,15 @@ class CustomDatasetMulti(Dataset):
                 if os.path.isfile(os.path.join(img_folder, img)) and os.path.isfile(label_file):
                     # print(img_folder + img)
                     case_id = img_folder.split('/')[-1]
-                    self.img_cases.append(case_id)
                     if img.startswith('._'):
                         img = img.replace('._', '')
                     idx = int(img.replace('.png', '').split("_")[1])
                     self.imgs.append(os.path.join(img_folder, img))
                     self.labels.append(labels_pt[idx].item()) # get label as int
-                    if labels_pt[idx].item() == 1: # if tile is cancerous
-                        self.HER2_labels.append(df_her2_status[case_id])
-                    else: # if not tumorous, there is no HER2 label
-                        self.HER2_labels.append(0)
+                    # if labels_pt[idx].item() == 1: # if tile is cancerous
+                    #     self.HER2_labels.append(df_her2_status[case_id])
+                    # else: # if not tumorous, there is no HER2 label
+                    #     self.HER2_labels.append(None)
         
     def __len__(self):
         return len(self.imgs)
@@ -56,9 +54,10 @@ class CustomDatasetMulti(Dataset):
         
         label = self.labels[idx] # Load corresponding image label
 
-        her2_label = self.HER2_labels[idx]
+        # her2_label = self.HER2_labels[idx]
         
-        return image, label, her2_label # Return transformed image, label and her2 status
+        # return image, label, her2_label # Return transformed image and label
+        return image, label # Return transformed image and label
 
 # Split image folders into train, val, test
 def split_data(patch_directory, split: list, seed):
@@ -123,7 +122,7 @@ def split_data(patch_directory, split: list, seed):
     # test_patches = [len(os.listdir(patch_directory + folder)) for folder in test_cases]
     num_selected_test = sum([len(os.listdir(patch_directory + folder)) for folder in test_cases])
     # dict = {x: for x in ['train', 'val', 'test']}
-    print(f"Number of training patches: {num_selected_train} \nNumber of validation patches: {num_selected_val} \nNumber of test patches: {num_selected_test}")
+    print(f"Number of training patches: {num_selected_train} \nNumber of validation patches {num_selected_val} \nNumber of test patches {num_selected_test}")
     return train_cases, val_cases, test_cases
 
 def get_her2_status_list():
@@ -137,11 +136,11 @@ def get_her2_status_list():
     df['Case ID'] = df['Case ID'].str.replace('TCGA-','')
     df['Case ID'] = df['Case ID'].str.replace('-01Z-00-DX1','')
 
-    df['Clinical.HER2.status'] = df['Clinical.HER2.status'].map({'Negative': 1, 'Positive': 2}).astype(int)
+    df['Clinical.HER2.status'] = df['Clinical.HER2.status'].map({'Negative': 0, 'Positive': 1}).astype(int)
 
-    dictt = df.set_index('Case ID').to_dict()['Clinical.HER2.status']
+    dict = df.set_index('Case ID').to_dict()['Clinical.HER2.status']
 
-    return dictt
+    return dict
 
 class RandomSpecificRotation:
     def __init__(self, probability=0.5):
@@ -158,12 +157,14 @@ class RandomSpecificRotation:
 
         return img
 
-def define_transforms(PATCH_SIZE, isResNet=False, isInception=False):
+def define_transforms(PATCH_SIZE, isResNet=False, isInception=False, isInceptionResnet=False):
     
     if isInception:
         INPUT_SIZE=299
     elif isResNet:
         INPUT_SIZE=224
+    elif isInceptionResnet:
+        INPUT_SIZE=299
     else:
         INPUT_SIZE=PATCH_SIZE
     
@@ -190,6 +191,28 @@ def define_transforms(PATCH_SIZE, isResNet=False, isInception=False):
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
             ])
         }
+    elif isInceptionResnet:
+        data_transforms = {
+            'train': transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor(),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                RandomSpecificRotation(),
+                transforms.ColorJitter(brightness=0.25, contrast=[0.5, 1.75], saturation=[0.75, 1.25], hue=0.04),
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) #inception
+            ]),
+            'val': transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor(),
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # inception
+            ]),
+            'test' : transforms.Compose([
+                transforms.Resize(INPUT_SIZE),
+                transforms.ToTensor(),
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # inception
+            ])
+        }
     else:
          data_transforms = {
             'train': transforms.Compose([
@@ -208,6 +231,6 @@ def define_transforms(PATCH_SIZE, isResNet=False, isInception=False):
                 transforms.Resize(INPUT_SIZE),
                 transforms.ToTensor()
             ])
-        }    
-
+        }
+        
     return data_transforms
