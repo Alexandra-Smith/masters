@@ -7,6 +7,7 @@ from PIL import Image
 import torchvision.transforms.functional as TF
 import pandas as pd
 import torch.utils.data as data_utils
+from torchvision.transforms import InterpolationMode
 
 class CustomDataset(Dataset):
     def __init__(self, img_folders, label_files, transform=None):
@@ -292,23 +293,23 @@ def define_transforms(PATCH_SIZE, isResNet=False, isInception=False, isInception
     elif isInceptionResnet:
         data_transforms = {
             'train': transforms.Compose([
-                transforms.Resize(INPUT_SIZE),
+                transforms.Resize(INPUT_SIZE, interpolation=InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomVerticalFlip(),
                 RandomSpecificRotation(),
                 transforms.ColorJitter(brightness=0.25, contrast=[0.5, 1.75], saturation=[0.75, 1.25], hue=0.04),
-                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) #inception
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) #inceptionresnet
             ]),
             'val': transforms.Compose([
-                transforms.Resize(INPUT_SIZE),
+                transforms.Resize(INPUT_SIZE, interpolation=InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
-                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # inception
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # inceptionresnet
             ]),
             'test' : transforms.Compose([
-                transforms.Resize(INPUT_SIZE),
+                transforms.Resize(INPUT_SIZE, interpolation=InterpolationMode.BICUBIC),
                 transforms.ToTensor(),
-                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # inception
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # inceptionresnet
             ])
         }
     else:

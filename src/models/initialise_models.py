@@ -227,15 +227,15 @@ def INCEPTIONv3(num_classes, checkpoint_path=None):
     # learning_rate_decay=0.9
     
     # Coudray
-    # initial_learning_rate=0.1
-    # learning_rate_decay=0.16
+    initial_learning_rate=0.1
+    learning_rate_decay=0.16
     
     # Gamble
     # initial_learning_rate=0.0055
     # learning_rate_decay=0.9
     
-    initial_learning_rate=0.0055
-    learning_rate_decay=0.16
+    # initial_learning_rate=0.0055
+    # learning_rate_decay=0.16
 
     momentum=0.9
     epsilon=1
@@ -260,6 +260,15 @@ def INCEPTIONv3(num_classes, checkpoint_path=None):
     if checkpoint_path != None:
         ckpt = torch.load(checkpoint_path)
         model.load_state_dict(ckpt)
+        print("checkpoint path loaded")
+        
+    # Freeze all the parameters
+    for param in model.parameters():
+        param.requires_grad = False
+
+    # Set the last n layers to trainable
+    for param in list(model.parameters())[-15:]:
+        param.requires_grad = True
     
     optimiser = optim.RMSprop(model.parameters(), 
                               lr=initial_learning_rate,
@@ -328,7 +337,7 @@ def inceptionv3_pretrained(num_classes):
     for param in list(model.parameters())[-1:]:
         param.requires_grad = True
     
-    optimiser = optim.RMSprop(filter(lambda p: p.requires_grad, model.parameters()), 
+    optimiser = optim.RMSprop(model.parameters(), 
                               lr=INITIAL_LEARNING_RATE, 
                               momentum=MOMENTUM, 
                               eps=EPSILON, 
@@ -345,7 +354,7 @@ def inceptionresnetv2(num_classes, checkpoint_path=None):
     # learning_rate=1e-5
     
     learning_rate=0.0055
-    learning_rate_decay=0.16
+    learning_rate_decay=0.9
     
     weight_decay=4e-05
     
@@ -363,6 +372,7 @@ def inceptionresnetv2(num_classes, checkpoint_path=None):
     #     param.requires_grad = False
     
     model.classif = nn.Sequential(
+        nn.ReLU(inplace=True),
         nn.Dropout(p=0.7),
         nn.Linear(model.get_classifier().in_features, num_classes)
     )

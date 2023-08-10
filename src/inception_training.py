@@ -13,10 +13,8 @@ from models import initialise_models
 from data.get_data import get_seg_dataloaders, get_her2status_dataloaders
 
 
-def train_model(model, device, dataloaders, progress, criterion, optimizer, mode='tissueclass', num_epochs=25, scheduler=None):
+def train_model(model, device, dataloaders, progress, criterion, optimizer, num_epochs=25, scheduler=None):
     model = model.to(device)
-    if mode not in ['tissueclass', 'her2status']:
-        raise Exception("ERROR: model mode given not one of 'tissueclass' or 'her2status'.")
     for epoch in range(num_epochs):
         print('-' * 10)
         print('Epoch {}/{}'.format(epoch+1, num_epochs))
@@ -32,12 +30,9 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
             running_loss = 0.0
             running_corrects = 0
             
-            # for inputs, labels, her2_labels in dataloaders[phase]:
             for inputs, labels in dataloaders[phase]:
                 inputs = inputs.to(device)
                 labels = labels.to(device)
-                if mode == 'her2status':
-                    her2_labels = her2_labels.to(device)
                 
                 progress[phase].update()
                 
@@ -48,24 +43,15 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, mode
                     if isinstance(outputs, tuple):
                         outputs = outputs[0] # extract tensor if output is a tuple
                     _, preds = torch.max(outputs, 1)
-                    if mode == 'tissueclass':
-                        loss = criterion(outputs, labels)
-                    if mode == 'her2status':
-                        loss = criterion(outputs, her2_labels)
+                    loss = criterion(outputs, labels)
                     
                     if phase == 'train':
-                        # L2 regularisation
-                        # l2_lambda = 1e-4
-                        # l2_norm = sum(p.pow(2.0).sum() for p in model.parameters())
-                        # loss += (l2_lambda * l2_norm)
+
                         loss.backward()
                         optimizer.step()
                         
                 running_loss += loss.item() * inputs.size(0)
-                if mode == 'tissueclass':
-                    running_corrects += torch.sum(preds == labels.data)
-                if mode == 'her2status':
-                    running_corrects += torch.sum(preds == her2_labels.data)    
+                running_corrects += torch.sum(preds == labels.data)   
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)
             if phase == 'train':
@@ -106,9 +92,9 @@ def main():
     # Batch size for training
     batch_size = 32
     # Number of epochs to train for
-    num_epochs = 25
+    num_epochs = 50
     
-    model_name = 'inception'
+    model_name = 'inceptionresnet'
     
     InceptionResnet = True if model_name == 'inceptionresnet' else False
     Inception = True if model_name == 'inception' else False
@@ -125,8 +111,10 @@ def main():
     # print(device)
     
     # checkpoint = '/home/21576262@su/masters/models/earthy-field-65_model_weights.pth' # Gamble
+    # checkpoint = '/home/21576262@su/masters/models/wandering-dust-71_model_weights.pth'
+    # checkpoint = '/home/21576262@su/masters/models/drawn-bush-70_model_weights.pth' # Coudray
     # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes, checkpoint_path=None)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.inceptionresnetv2(num_classes, checkpoint_path=None)
    
     # Initialize WandB run
     wandb.login()
