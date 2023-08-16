@@ -348,7 +348,7 @@ def get_seg_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False
 
     split=[70, 15, 15] # for splitting into train/val/test
 
-    train_cases, val_cases, test_cases = split_data(img_dir, split, SEED)
+    train_cases, val_cases, test_cases = split_all_data(img_dir, split, SEED)
 
     train_img_folders = [img_dir + case for case in train_cases]
     val_img_folders = [img_dir + case for case in val_cases]
@@ -371,7 +371,7 @@ def get_seg_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False
         'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
     }
     
-    print(f"Total tumour patches: {len(dataloaders['train'])*batch_size + len(dataloaders['val'])*batch_size + len(dataloaders['test'])*batch_size} \nNumber of training patches: {len(dataloaders['train'])*batch_size} \nNumber of validation patches {len(dataloaders['val'])*batch_size} \nNumber of test patches {len(dataloaders['test'])*batch_size}")
+    print(f"Total patches: {len(dataloaders['train'])*batch_size + len(dataloaders['val'])*batch_size + len(dataloaders['test'])*batch_size} \nNumber of training patches: {len(dataloaders['train'])*batch_size} \nNumber of validation patches {len(dataloaders['val'])*batch_size} \nNumber of test patches {len(dataloaders['test'])*batch_size}")
     
     return train_cases, val_cases, test_cases, dataloaders
 

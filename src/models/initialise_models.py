@@ -207,7 +207,7 @@ def resnet18full(num_classes):
 
 
 def INCEPTIONv3(num_classes, checkpoint_path=None):
-
+    
     # Hyperparameters
     # WEIGHT_DECAY = 0.9                  # Decay term for RMSProp.
     # # weight_decay = 0.00004?
@@ -217,7 +217,7 @@ def INCEPTIONv3(num_classes, checkpoint_path=None):
     # INITIAL_LEARNING_RATE = 0.1         # Initial learning rate.
     # NUM_EPOCHS_PER_DECAY = 30.0         # Epochs after which learning rate decays.
     # LEARNING_RATE_DECAY_FACTOR = 0.16   # Learning rate decay factor.
-
+    
     # weight_decay=0.9
     # momentum=0.9
     # epsilon=1.0
@@ -227,15 +227,15 @@ def INCEPTIONv3(num_classes, checkpoint_path=None):
     # learning_rate_decay=0.9
     
     # Coudray
-    initial_learning_rate=0.1
-    learning_rate_decay=0.16
+    # initial_learning_rate=0.1
+    # learning_rate_decay=0.16
     
     # Gamble
     # initial_learning_rate=0.0055
     # learning_rate_decay=0.9
     
-    # initial_learning_rate=0.0055
-    # learning_rate_decay=0.16
+    initial_learning_rate=0.0055
+    learning_rate_decay=0.16
 
     momentum=0.9
     epsilon=1
@@ -257,18 +257,18 @@ def INCEPTIONv3(num_classes, checkpoint_path=None):
     
     model = InceptionV3(num_classes=num_classes)
     
-    if checkpoint_path != None:
-        ckpt = torch.load(checkpoint_path)
-        model.load_state_dict(ckpt)
-        print("checkpoint path loaded")
+    # if checkpoint_path != None:
+    #     ckpt = torch.load(checkpoint_path)
+    #     model.load_state_dict(ckpt)
+    #     print("checkpoint path loaded")
         
-    # Freeze all the parameters
-    for param in model.parameters():
-        param.requires_grad = False
+#     # Freeze all the parameters
+#     for param in model.parameters():
+#         param.requires_grad = False
 
-    # Set the last n layers to trainable
-    for param in list(model.parameters())[-15:]:
-        param.requires_grad = True
+#     # Set the last n layers to trainable
+#     for param in list(model.parameters())[-15:]:
+#         param.requires_grad = True
     
     optimiser = optim.RMSprop(model.parameters(), 
                               lr=initial_learning_rate,
@@ -353,8 +353,16 @@ def inceptionresnetv2(num_classes, checkpoint_path=None):
     
     # learning_rate=1e-5
     
-    learning_rate=0.0055
-    learning_rate_decay=0.9
+    # Coudray
+    initial_learning_rate=0.1
+    learning_rate_decay=0.16
+    
+    # Gamble
+    # initial_learning_rate=0.0055
+    # learning_rate_decay=0.9
+    
+    # initial_learning_rate=0.0055
+    # learning_rate_decay=0.16
     
     weight_decay=4e-05
     
@@ -395,7 +403,8 @@ def inceptionresnetv2(num_classes, checkpoint_path=None):
                            
     criterion = nn.CrossEntropyLoss()
     
-    
+    return model, optimiser, criterion, parameters, scheduler
+
     ####################################################
 #     initial_learning_rate=0.0055
 #     learning_rate_decay=0.16
@@ -457,5 +466,3 @@ def inceptionresnetv2(num_classes, checkpoint_path=None):
 #     scheduler = optim.lr_scheduler.ExponentialLR(optimiser, gamma=learning_rate_decay)
     
 #     criterion = nn.CrossEntropyLoss()
-
-    return model, optimiser, criterion, parameters, None

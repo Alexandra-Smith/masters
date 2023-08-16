@@ -94,7 +94,7 @@ def main():
     # Number of epochs to train for
     num_epochs = 50
     
-    model_name = 'inceptionresnet'
+    model_name = 'inception'
     
     InceptionResnet = True if model_name == 'inceptionresnet' else False
     Inception = True if model_name == 'inception' else False
@@ -114,7 +114,8 @@ def main():
     # checkpoint = '/home/21576262@su/masters/models/wandering-dust-71_model_weights.pth'
     # checkpoint = '/home/21576262@su/masters/models/drawn-bush-70_model_weights.pth' # Coudray
     # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.inceptionresnetv2(num_classes, checkpoint_path=None)
+    # model, optimiser, criterion, parameters, scheduler = initialise_models.inceptionresnetv2(num_classes, checkpoint_path=None)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes, checkpoint_path=None)
    
     # Initialize WandB run
     wandb.login()
