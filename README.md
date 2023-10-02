@@ -22,7 +22,7 @@ Project Organization
     │   ├── processed      <- The final data for modeling.
     │   └── raw            <- The original data.
     │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
+    ├── models             <- Trained models, model predictions, or model summaries (saved on server)
     │
     ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
     │                         the creator's initials, and a short `-` delimited description, e.g.
