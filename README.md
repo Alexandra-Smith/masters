@@ -1,10 +1,10 @@
 masters
 ==============================
 
-Title: Prediction of HER2 status in breast cancer directly from histopathology images using deep learning.
+### Title: Prediction of HER2 status in breast cancer directly from histopathology images using deep learning. ###
 
 ## 🚧 Work in Progress 🚧
-This repository hosts my MSc project, which is currently in being completed.
+This repository hosts my MSc project, which is currently being completed.
 
 Project Organization
 ------------
