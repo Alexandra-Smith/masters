@@ -6,6 +6,12 @@ masters
 ## 🚧 Work in Progress 🚧
 This repository hosts my MSc project, which is currently being completed.
 
+Abstract
+------------
+
+Results
+------------
+
 Project Organization
 ------------
 
