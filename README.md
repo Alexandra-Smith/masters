@@ -4,19 +4,17 @@ masters
 Title: Prediction of HER2 status in breast cancer directly from histopathology images using deep learning.
 
 ## 🚧 Work in Progress 🚧
-This repository hosts my MSc project, which is currently being completed.
+This repository hosts my MSc project, which is currently in being completed.
 
 Project Organization
 ------------
 
     ├── README.md          <- The top-level README for developers using this project.
-    ├── data
+    ├── data (saved locally)
     │   ├── external       <- Data from third party sources.
     │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
-    │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
+    │   ├── processed      <- The final data for modeling.
+    │   └── raw            <- The original data.
     │
     ├── models             <- Trained and serialized models, model predictions, or model summaries
     │
@@ -24,9 +22,10 @@ Project Organization
     │                         the creator's initials, and a short `-` delimited description, e.g.
     │                         `1.0-jqp-initial-data-exploration`.
     │
-    │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
+    ├── reports            <- Generated analysis.
+    │   └── data figs      <- Figures generated from data exploration
+    │   └── exploration    <- Generated images for exploratory purposes, and to be used in thesis
+    │   └── results        <- Graphics and figures generated from model testing
     │
     ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
     │                         generated with `pip freeze > requirements.txt`
@@ -34,16 +33,14 @@ Project Organization
     ├── src                <- Source code for use in this project.
     │   ├── __init__.py    <- Makes src a Python module
     │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
+    │   ├── data           <- Scripts to generate and pre-process data
+    │   │   └── 
     │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
+    │   ├── models         <- Scripts to initialise, train and test models and then use trained models to make
     │   │   │                 predictions
     │   │   ├── predict_model.py
     │   │   └── train_model.py
     │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
 
 
 --------
