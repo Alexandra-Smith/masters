@@ -1,7 +1,10 @@
 masters
 ==============================
 
-The detection and analysis of cancer in histopathology images
+Title: Prediction of HER2 status in breast cancer directly from histopathology images using deep learning.
+
+## 🚧 Work in Progress 🚧
+This repository hosts my MSc project, which is currently being completed.
 
 Project Organization
 ------------
@@ -21,7 +24,6 @@ Project Organization
     │                         the creator's initials, and a short `-` delimited description, e.g.
     │                         `1.0-jqp-initial-data-exploration`.
     │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
     │
     ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
     │   └── figures        <- Generated graphics and figures to be used in reporting
@@ -34,9 +36,6 @@ Project Organization
     │   │
     │   ├── data           <- Scripts to download or generate data
     │   │   └── make_dataset.py
-    │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
     │   │
     │   ├── models         <- Scripts to train models and then use trained models to make
     │   │   │                 predictions
