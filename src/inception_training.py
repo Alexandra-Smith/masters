@@ -90,11 +90,11 @@ def main():
     # Number of classes in the dataset
     num_classes = 2
     # Batch size for training
-    batch_size = 32
+    batch_size = 64
     # Number of epochs to train for
     num_epochs = 50
     
-    model_name = 'inception'
+    model_name = 'inceptionresnet'
     
     InceptionResnet = True if model_name == 'inceptionresnet' else False
     Inception = True if model_name == 'inception' else False
@@ -114,8 +114,8 @@ def main():
     # checkpoint = '/home/21576262@su/masters/models/wandering-dust-71_model_weights.pth'
     # checkpoint = '/home/21576262@su/masters/models/drawn-bush-70_model_weights.pth' # Coudray
     # Initialize the model for this run
-    # model, optimiser, criterion, parameters, scheduler = initialise_models.inceptionresnetv2(num_classes, checkpoint_path=None)
-    model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes, checkpoint_path=None)
+    model, optimiser, criterion, parameters, scheduler = initialise_models.inceptionresnetv2(num_classes, checkpoint_path=None)
+    # model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes, checkpoint_path=None)
    
     # Initialize WandB run
     wandb.login()
@@ -123,8 +123,8 @@ def main():
 
     run = wandb.init(
         project="masters", # set project
-        group=str(sys.argv[1]),
-        notes=sys.argv[2],
+        group='stage2',
+        notes=sys.argv[1],
         config=parameters) # Track hyperparameters and run metadata
     
     # Save data split

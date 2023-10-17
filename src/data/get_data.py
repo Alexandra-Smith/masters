@@ -1,6 +1,7 @@
 import os
 import torch
 import random
+import numpy as np
 from torch.utils.data import Dataset
 from torchvision import transforms
 from PIL import Image
@@ -8,6 +9,9 @@ import torchvision.transforms.functional as TF
 import pandas as pd
 import torch.utils.data as data_utils
 from torchvision.transforms import InterpolationMode
+from sklearn.model_selection import train_test_split, KFold
+from torch.utils.data import Subset
+from collections import Counter
 
 class CustomDataset(Dataset):
     def __init__(self, img_folders, label_files, transform=None):
@@ -416,3 +420,109 @@ def get_her2status_dataloaders(batch_size, SEED, Inception=False, InceptionResne
     print(f"Total tumour patches: {len(dataloaders['train'])*batch_size + len(dataloaders['val'])*batch_size + len(dataloaders['test'])*batch_size} \nNumber of training patches: {len(dataloaders['train'])*batch_size} \nNumber of validation patches {len(dataloaders['val'])*batch_size} \nNumber of test patches {len(dataloaders['test'])*batch_size}")
     
     return train_cases, val_cases, test_cases, dataloaders
+
+def get_train_dataloader(subfolders, batch_size, Inception=False, InceptionResnet=False):
+    '''
+    Given a list of subfolders, extract all patches in them and put into a train dataloader.
+    (used for cross validation) - implements undersampling of majority class
+    '''
+
+    PATCH_SIZE=256
+    STRIDE=PATCH_SIZE
+    num_cpus=4
+    main_dir = '/home/21576262@su/masters/data/patches/'
+    labels_dir = '/home/21576262@su/masters/data/labels/' 
+    img_folders = [main_dir + case for case in subfolders]
+    label_files = [labels_dir + case + '.pt' for case in subfolders]
+
+    data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
+    dataset = CustomDataset(img_folders, label_files, transform=data_transforms['train'])
+    
+    labels = [label for _, label in dataset]
+    label_counts = Counter(labels)
+        
+    class_counts = [label_counts[0], label_counts[1]]
+    
+    # OVERSAMPLE minority class
+    # Compute class weights
+    class_weights = 1. / torch.tensor(class_counts, dtype=torch.float)
+    weights = [class_weights[i] for i in labels]  # dataset_targets are your labels
+    weighted_sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+    
+    # Create dataloader
+    dataloader = data_utils.DataLoader(dataset, sampler=weighted_sampler, batch_size=batch_size, num_workers=num_cpus)
+    
+    return dataloader
+
+def get_test_dataloader(subfolders, batch_size, Inception=False, InceptionResnet=False):
+    '''
+    Given list of subfolders, extract all patches in them and put into a test dataloader.
+    '''
+    
+    PATCH_SIZE=256
+    STRIDE=PATCH_SIZE
+    num_cpus=4
+    main_dir = '/home/21576262@su/masters/data/patches/'
+    labels_dir = '/home/21576262@su/masters/data/labels/' 
+    test_img_folders = [main_dir + case for case in subfolders]
+    test_labels = [labels_dir + case + '.pt' for case in subfolders]
+    
+    data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
+
+    test_dataset = CustomDataset(test_img_folders, test_labels, transform=data_transforms['test'])
+    # Create dataloader
+    test_dataloader = data_utils.DataLoader(test_dataset, batch_size=batch_size, num_workers=num_cpus, shuffle=True)
+    return test_dataloader
+
+def kfolds_split(k, seed):
+    '''
+    Given all data, split into k folds and return case names for each fold.
+    '''
+    kf = KFold(n_splits=k, shuffle=True, random_state=seed)  # 5-folds cross-validation
+    
+    main_dir = '/home/21576262@su/masters/data/patches/'
+    case_folders = os.listdir(main_dir)
+    
+    # Store results
+    splits = {}
+
+    # Apply 5-fold cross-validation on the full dataset
+    for fold, (train_val_index, test_index) in enumerate(kf.split(case_folders), 1):
+        test_subjects = [case_folders[i] for i in test_index]
+        train_subjects = [case_folders[i] for i in train_val_index]
+
+        splits[f"Fold-{fold}"] = {
+            'train': train_subjects,
+            'test': test_subjects
+        }
+
+    # Print the results
+    # for fold, data in splits.items():
+    #     print(f"Fold-{fold}:\nTrain: {data['train']}\nTest: {data['test']}\n")
+        
+    return splits
+
+
+# Undersampling
+
+    # labels = [label for _, label in dataset]
+    # class_counts_before = Counter(labels)
+    # print("Before:")
+    # for class_label, count in class_counts_before.items():
+    #     print(f"Class {class_label}: {count} samples")
+#     class_to_indices = {class_label: [] for class_label in set(labels)}
+#     for idx, label in enumerate(labels):
+#         class_to_indices[label].append(idx)
+        
+#     minority_class = min(class_to_indices, key=lambda label: len(class_to_indices[label]))
+#     majority_class = max(class_to_indices, key=lambda label: len(class_to_indices[label]))
+
+#     undersampled_indices = np.random.choice(class_to_indices[majority_class], len(class_to_indices[minority_class]), replace=False).tolist()
+#     undersampled_indices += class_to_indices[minority_class] # combine indices
+#     undersampled_dataset = Subset(dataset, undersampled_indices) # create subset
+    
+#     undersampled_labels = [labels[idx] for idx in undersampled_indices]
+#     class_counts_after = Counter(undersampled_labels)
+#     print("After:")
+#     for class_label, count in class_counts_after.items():
+#         print(f"Class {class_label}: {count} samples")

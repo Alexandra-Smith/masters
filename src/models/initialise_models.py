@@ -231,11 +231,11 @@ def INCEPTIONv3(num_classes, checkpoint_path=None):
     # learning_rate_decay=0.16
     
     # Gamble
-    # initial_learning_rate=0.0055
-    # learning_rate_decay=0.9
-    
     initial_learning_rate=0.0055
-    learning_rate_decay=0.16
+    learning_rate_decay=0.9
+    
+    # initial_learning_rate=0.0055
+    # learning_rate_decay=0.16
 
     momentum=0.9
     epsilon=1
@@ -354,19 +354,19 @@ def inceptionresnetv2(num_classes, checkpoint_path=None):
     # learning_rate=1e-5
     
     # Coudray
-    initial_learning_rate=0.1
-    learning_rate_decay=0.16
+    # initial_learning_rate=0.1
+    # learning_rate_decay=0.16
     
     # Gamble
-    # initial_learning_rate=0.0055
-    # learning_rate_decay=0.9
+    initial_learning_rate=0.0055
+    learning_rate_decay=0.9
     
     # initial_learning_rate=0.0055
     # learning_rate_decay=0.16
     
     weight_decay=4e-05
     
-    parameters = {"learning_rate": learning_rate,
+    parameters = {"learning_rate": initial_learning_rate,
                   "learning_rate_decay": learning_rate_decay,
                   "weight_decay/L2": weight_decay}
     
@@ -389,7 +389,7 @@ def inceptionresnetv2(num_classes, checkpoint_path=None):
     #     param.requires_grad = True
     
     optimiser = optim.Adam(model.parameters(), 
-                           lr=learning_rate, 
+                           lr=initial_learning_rate, 
                            weight_decay=weight_decay)
     
     # optimiser = optim.RMSprop(model.parameters(), 
