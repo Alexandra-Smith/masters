@@ -5,6 +5,7 @@ train_model.py | 'notes about run for wandb'
 import os
 import sys
 import torch
+import time
 from tqdm import tqdm
 import wandb
 import json
@@ -36,7 +37,7 @@ def train_model(model, device, dataloader, progress, criterion, optimizer, num_e
             inputs = inputs.to(device)
             labels = labels.to(device)
 
-            progress[phase].update()
+            progress.update()
 
             optimizer.zero_grad()
 
@@ -114,7 +115,11 @@ def main():
         fold, data = fold_items[i]
         train_cases = data['train']
         test_cases = data['test']
+        start_time = time.time()
         train_dataloader = get_train_dataloader(train_cases, batch_size, Inception=Inception, InceptionResnet=InceptionResnet)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(f"Time elapsed: {elapsed_time} seconds.")
         
         # Detect if there is a GPU available
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -144,7 +149,8 @@ def main():
 
         # Save model
         torch.save(model.state_dict(), '/home/21576262@su/masters/models/' + str(run.name) + '_model_weights.pth')
-
+        
+        run.finish()
 
 if __name__ == '__main__':
     main()
