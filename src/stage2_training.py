@@ -10,7 +10,7 @@ import wandb
 import json
 import pandas as pd
 from models import initialise_models
-from data.get_data import get_seg_dataloaders, get_her2status_dataloaders
+from data.get_data import get_seg_dataloaders, split_her2, her2_dataloaders
 
 
 def train_model(model, device, dataloaders, progress, criterion, optimizer, num_epochs=25, scheduler=None):
@@ -94,55 +94,65 @@ def main():
     # Number of epochs to train for
     num_epochs = 50
     
-    model_name = 'inceptionresnet'
-    
-    InceptionResnet = True if model_name == 'inceptionresnet' else False
-    Inception = True if model_name == 'inception' else False
-    
-    print(f"Model name: {model_name}")
-    
     SEED=42
+    train_cases, val_cases, test_cases = split_her2()
     
-    # train_cases, val_cases, test_cases, dataloaders = get_seg_dataloaders(batch_size, SEED, Inception=Inception, InceptionResnet=InceptionResnet)
-    # train_cases, val_cases, test_cases, dataloaders = get_her2status_dataloaders(batch_size, SEED, Inception=Inception, InceptionResnet=InceptionResnet)
+    # LOAD ALL MODELS
+    # Define a list of model names (matching the function names in initialise_models)
+    model_names = ['INCEPTIONv3', 'RESNET34', 'RESNET18', 'INCEPTIONRESNETv2', 'INCEPTIONv4']
+    model_containers = []
+    for model_name in model_names:
+        init_function = getattr(initialise_models, model_name)
+        model_info = {}
+        model, optimiser, criterion, parameters, scheduler = init_function(num_classes, checkpoint_path=None)
+        model_info['model'] = model; model_info['optimiser'] = optimiser; model_info['criterion'] = criterion; model_info['parameters'] = parameters; model_info['scheduler'] = scheduler
+        model_containers.append(model_info)
     
-    train_cases, val_cases, test_cases, dataloaders = her2_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False)
+    for i, model_info in enumerate(model_containers):
+        
+        model = model_info['model']
+        optimiser = model_info['optimiser']
+        criterion = model_info['criterion']
+        parameters = model_info['parameters']
+        scheduler = model_info['scheduler']
+        
+        InceptionResnet = True if model_name=='INCEPTIONRESNETv2' else False
+        Inception = True if model_name=='INCEPTIONv3' or model_name=='INCEPTIONv4' else False
+        
+        print(f"Model #{i}: {model_names[i]}")
+        
+        dataloaders = her2_dataloaders(batch_size, SEED, train_img_folders, val_img_folders, test_img_folders, Inception=False, InceptionResnet=False)
+        
+        # Detect if there is a GPU available
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Detect if there is a GPU available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # Initialize WandB run
+        wandb.login()
+        parameters['batch_size'] = batch_size; parameters['epochs'] = num_epochs
+        
+        run = wandb.init(
+            project="masters", # set project
+            group='STAGE2',
+            # notes=sys.argv[1],
+            config=parameters) # Track hyperparameters and run metadata
+        # Save data split
+        data_split = {'seed': SEED,
+                      'train': train_cases,
+                      'val': val_cases,
+                      'test': test_cases
+                     }
+        with open('/home/21576262@su/masters/models/data_splits/' + str(run.name) + '.json', 'w') as file:
+            json.dump(data_split, file)
 
-    # Initialize the model for this run
-    model, optimiser, criterion, parameters, scheduler = initialise_models.inceptionresnetv2(num_classes, checkpoint_path=None)
-    # model, optimiser, criterion, parameters, scheduler = initialise_models.INCEPTIONv3(num_classes, checkpoint_path=None)
-   
-    # Initialize WandB run
-    wandb.login()
-    parameters['batch_size'] = batch_size; parameters['epochs'] = num_epochs
+        progress = {'train': tqdm(total=len(dataloaders['train']), desc="Training progress"), 'val': tqdm(total=len(dataloaders['val']), desc="Validation progress")}
 
-    run = wandb.init(
-        project="masters", # set project
-        group='stage2',
-        notes=sys.argv[1],
-        config=parameters) # Track hyperparameters and run metadata
+        # Train and evaluate
+        model = train_model(model, device, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
+
+        # Save model
+        torch.save(model.state_dict(), '/home/21576262@su/masters/models/' + str(run.name) + '_model_weights.pth')
+        
+        run.finish()
     
-    # Save data split
-    data_split = {'seed': SEED,
-                  'train': train_cases,
-                  'val': val_cases,
-                  'test': test_cases
-                 }
-    with open('/home/21576262@su/masters/models/data_splits/' + str(run.name) + '.json', 'w') as file:
-        json.dump(data_split, file)
-    
-    progress = {'train': tqdm(total=len(dataloaders['train']), desc="Training progress"), 'val': tqdm(total=len(dataloaders['val']), desc="Validation progress")}
-
-    # Train and evaluate
-    # and send model to gpu
-    model = train_model(model, device, dataloaders, progress, criterion, optimiser, num_epochs=num_epochs, scheduler=scheduler)
-    
-    # Save model
-    torch.save(model.state_dict(), '/home/21576262@su/masters/models/' + str(run.name) + '_model_weights.pth')
-
-
 if __name__ == '__main__':
     main()

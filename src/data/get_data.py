@@ -379,23 +379,30 @@ def get_seg_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False
     
     return train_cases, val_cases, test_cases, dataloaders
 
+def split_her2():
+    
+    torch.manual_seed(SEED)
+    # using full set of data
+    img_dir = '/home/21576262@su/masters/data/patches/'
+    labels_dir = '/home/21576262@su/masters/data/labels/'
+    
+    all_cases = os.listdir(label_directory)
 
-def get_her2status_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False):
+    # Split the data into 70% training and 15% validation, 15% test
+    train_cases, temp_data = train_test_split(all_cases, test_size=0.30, random_state=SEED)
+    val_cases, test_cases = train_test_split(temp_data, test_size=0.50, random_state=SEED)
+    
+    return train_cases, val_cases, test_cases
+
+def her2_dataloaders(batch_size, SEED, train_img_folders, val_img_folders, test_img_folders, Inception=False, InceptionResnet=False):
     
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
     num_cpus=4
     
-    data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
-    
-    # using full set of data
     img_dir = '/home/21576262@su/masters/data/patches/'
-    labels_dir = '/home/21576262@su/masters/data/labels/' 
-
-    split=[70, 15, 15] # for splitting into train/val/test
-
-    train_cases, val_cases, test_cases = split_tumour_data(img_dir, labels_dir, split, SEED)
-
+    labels_dir = '/home/21576262@su/masters/data/labels/'
+    
     train_img_folders = [img_dir + case for case in train_cases]
     val_img_folders = [img_dir + case for case in val_cases]
     test_img_folders = [img_dir + case for case in test_cases]
@@ -404,22 +411,35 @@ def get_her2status_dataloaders(batch_size, SEED, Inception=False, InceptionResne
     train_labels = [labels_dir + case + '.pt' for case in train_cases]
     val_labels = [labels_dir + case + '.pt' for case in val_cases]
     test_labels = [labels_dir + case + '.pt' for case in test_cases]
-
+    
+    data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
+    
     image_datasets = {
-        'train': HER2Dataset(train_img_folders, train_labels, transform=data_transforms['train']),
-        'val': HER2Dataset(val_img_folders, val_labels, transform=data_transforms['val']),
-        'test': HER2Dataset(test_img_folders, test_labels, transform=data_transforms['test'])
+    'train': HER2Dataset(train_img_folders, train_labels, transform=data_transforms['train']),
+    'val': HER2Dataset(val_img_folders, val_labels, transform=data_transforms['val']),
+    'test': HER2Dataset(test_img_folders, test_labels, transform=data_transforms['test'])
     }
+    
+    labels = [label for _, label in image_datasets["train"]]
+    label_counts = Counter(labels)
+        
+    class_counts = [label_counts[0], label_counts[1]]
+    
+    # Compute class weights for balancing training dataset
+    class_weights = 1. / torch.tensor(class_counts, dtype=torch.float)
+    weights = [class_weights[i] for i in labels]  # dataset_targets are your labels
+    weighted_sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+    
     # Create training, validation and test dataloaders
     dataloaders = {
-        'train': data_utils.DataLoader(image_datasets['train'], batch_size=batch_size, num_workers=num_cpus, shuffle=True, drop_last=True),
+        'train': data_utils.DataLoader(image_datasets['train'], sampler=weighted_sampler, batch_size=batch_size, num_workers=num_cpus, shuffle=True, drop_last=True),
         'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=num_cpus, shuffle=True),
         'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
     }
     
     print(f"Total tumour patches: {len(dataloaders['train'])*batch_size + len(dataloaders['val'])*batch_size + len(dataloaders['test'])*batch_size} \nNumber of training patches: {len(dataloaders['train'])*batch_size} \nNumber of validation patches {len(dataloaders['val'])*batch_size} \nNumber of test patches {len(dataloaders['test'])*batch_size}")
     
-    return train_cases, val_cases, test_cases, dataloaders
+    return dataloaders
 
 def get_train_dataloader(subfolders, batch_size, Inception=False, InceptionResnet=False):
     '''
@@ -478,7 +498,7 @@ def kfolds_split(k, seed):
     '''
     Given all data, split into k folds and return case names for each fold.
     '''
-    kf = KFold(n_splits=k, shuffle=True, random_state=seed)  # 5-folds cross-validation
+    kf = KFold(n_splits=k, shuffle=True, random_state=seed)  # k-folds cross-validation
     
     main_dir = '/home/21576262@su/masters/data/patches/'
     case_folders = os.listdir(main_dir)
@@ -502,27 +522,43 @@ def kfolds_split(k, seed):
         
     return splits
 
-
-# Undersampling
-
-    # labels = [label for _, label in dataset]
-    # class_counts_before = Counter(labels)
-    # print("Before:")
-    # for class_label, count in class_counts_before.items():
-    #     print(f"Class {class_label}: {count} samples")
-#     class_to_indices = {class_label: [] for class_label in set(labels)}
-#     for idx, label in enumerate(labels):
-#         class_to_indices[label].append(idx)
-        
-#     minority_class = min(class_to_indices, key=lambda label: len(class_to_indices[label]))
-#     majority_class = max(class_to_indices, key=lambda label: len(class_to_indices[label]))
-
-#     undersampled_indices = np.random.choice(class_to_indices[majority_class], len(class_to_indices[minority_class]), replace=False).tolist()
-#     undersampled_indices += class_to_indices[minority_class] # combine indices
-#     undersampled_dataset = Subset(dataset, undersampled_indices) # create subset
+# def get_her2status_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False):
     
-#     undersampled_labels = [labels[idx] for idx in undersampled_indices]
-#     class_counts_after = Counter(undersampled_labels)
-#     print("After:")
-#     for class_label, count in class_counts_after.items():
-#         print(f"Class {class_label}: {count} samples")
+#     PATCH_SIZE=256
+#     STRIDE=PATCH_SIZE
+#     num_cpus=4
+    
+#     data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
+    
+#     # using full set of data
+#     img_dir = '/home/21576262@su/masters/data/patches/'
+#     labels_dir = '/home/21576262@su/masters/data/labels/' 
+
+#     split=[70, 15, 15] # for splitting into train/val/test
+
+#     train_cases, val_cases, test_cases = split_tumour_data(img_dir, labels_dir, split, SEED)
+
+#     train_img_folders = [img_dir + case for case in train_cases]
+#     val_img_folders = [img_dir + case for case in val_cases]
+#     test_img_folders = [img_dir + case for case in test_cases]
+
+#     # Contains the file path for each .pt file for the cases used in each of the sets
+#     train_labels = [labels_dir + case + '.pt' for case in train_cases]
+#     val_labels = [labels_dir + case + '.pt' for case in val_cases]
+#     test_labels = [labels_dir + case + '.pt' for case in test_cases]
+
+#     image_datasets = {
+#         'train': HER2Dataset(train_img_folders, train_labels, transform=data_transforms['train']),
+#         'val': HER2Dataset(val_img_folders, val_labels, transform=data_transforms['val']),
+#         'test': HER2Dataset(test_img_folders, test_labels, transform=data_transforms['test'])
+#     }
+#     # Create training, validation and test dataloaders
+#     dataloaders = {
+#         'train': data_utils.DataLoader(image_datasets['train'], batch_size=batch_size, num_workers=num_cpus, shuffle=True, drop_last=True),
+#         'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=num_cpus, shuffle=True),
+#         'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
+#     }
+    
+#     print(f"Total tumour patches: {len(dataloaders['train'])*batch_size + len(dataloaders['val'])*batch_size + len(dataloaders['test'])*batch_size} \nNumber of training patches: {len(dataloaders['train'])*batch_size} \nNumber of validation patches {len(dataloaders['val'])*batch_size} \nNumber of test patches {len(dataloaders['test'])*batch_size}")
+    
+#     return train_cases, val_cases, test_cases, dataloaders
