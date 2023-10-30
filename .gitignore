@@ -90,3 +90,5 @@ target/
 
 data/*
 models/*
+
+wandb/run-20231018_071902-2hzablwt/run-2hzablwt.wandb
