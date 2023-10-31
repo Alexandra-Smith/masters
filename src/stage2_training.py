@@ -1,6 +1,6 @@
 '''
 Run as:
-train_model.py | run_group | 'notes about run for wandb'
+train_model.py
 '''
 import os
 import sys
@@ -11,6 +11,7 @@ import json
 import pandas as pd
 from models import initialise_models
 from data.get_data import get_seg_dataloaders, split_her2, her2_dataloaders
+from sklearn.metrics import f1_score
 
 
 def train_model(model, device, dataloaders, progress, criterion, optimizer, num_epochs=25, scheduler=None):
@@ -29,8 +30,10 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, num_
                 
             running_loss = 0.0
             running_corrects = 0
+            true_labels = []
+            all_preds = []
             
-            for inputs, labels in dataloaders[phase]:
+            for inputs, labels, _ in dataloaders[phase]:
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 
@@ -44,6 +47,9 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, num_
                         outputs = outputs[0] # extract tensor if output is a tuple
                     _, preds = torch.max(outputs, 1)
                     loss = criterion(outputs, labels)
+                    
+                    true_labels.extend(labels.cpu().numpy())
+                    all_preds.extend(preds.cpu().numpy())
                     
                     if phase == 'train':
 
@@ -60,6 +66,7 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, num_
             if phase == 'val':
                 loss_valid = epoch_loss
                 acc_valid = epoch_acc
+                vaid_f1 = f1_score(true_labels, all_preds)
             print(f'Epoch {epoch + 1}/{num_epochs}, {phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
         
         print()
@@ -74,7 +81,9 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, num_
             "Train Loss": loss_train,
             "Train Acc": acc_train,
             "Valid Loss": loss_valid,
-            "Valid Acc": acc_valid})      
+            "Valid Acc": acc_valid,
+            "Valid F1": valid_f1
+        })      
             
     return model
 
@@ -95,16 +104,16 @@ def main():
     num_epochs = 50
     
     SEED=42
-    train_cases, val_cases, test_cases = split_her2()
+    train_cases, val_cases, test_cases = split_her2(SEED)
     
     # LOAD ALL MODELS
     # Define a list of model names (matching the function names in initialise_models)
-    model_names = ['INCEPTIONv3', 'RESNET34', 'RESNET18', 'INCEPTIONRESNETv2', 'INCEPTIONv4']
+    model_names = ['RESNET34', 'RESNET18', 'INCEPTIONRESNETv2', 'INCEPTIONv4', 'INCEPTIONv3']
     model_containers = []
     for model_name in model_names:
         init_function = getattr(initialise_models, model_name)
         model_info = {}
-        model, optimiser, criterion, parameters, scheduler = init_function(num_classes, checkpoint_path=None)
+        model, optimiser, criterion, parameters, scheduler = init_function(num_classes)
         model_info['model'] = model; model_info['optimiser'] = optimiser; model_info['criterion'] = criterion; model_info['parameters'] = parameters; model_info['scheduler'] = scheduler
         model_containers.append(model_info)
     
@@ -116,12 +125,12 @@ def main():
         parameters = model_info['parameters']
         scheduler = model_info['scheduler']
         
-        InceptionResnet = True if model_name=='INCEPTIONRESNETv2' else False
-        Inception = True if model_name=='INCEPTIONv3' or model_name=='INCEPTIONv4' else False
+        InceptionResnet = True if model_names[i]=='INCEPTIONRESNETv2' else False
+        Inception = True if (model_names[i]=='INCEPTIONv3' or model_names[i]=='INCEPTIONv4') else False
         
         print(f"Model #{i}: {model_names[i]}")
         
-        dataloaders = her2_dataloaders(batch_size, SEED, train_img_folders, val_img_folders, test_img_folders, Inception=False, InceptionResnet=False)
+        dataloaders = her2_dataloaders(batch_size, SEED, train_cases, val_cases, test_cases, Inception=Inception, InceptionResnet=InceptionResnet)
         
         # Detect if there is a GPU available
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -132,7 +141,7 @@ def main():
         
         run = wandb.init(
             project="masters", # set project
-            group='STAGE2',
+            group='STAGE 2',
             # notes=sys.argv[1],
             config=parameters) # Track hyperparameters and run metadata
         # Save data split

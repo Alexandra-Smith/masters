@@ -53,7 +53,7 @@ class CustomDataset(Dataset):
         label = self.labels[idx] # Load corresponding image label
 
         return image, label # Return transformed image and label
-    
+
 # Split image folders into train, val, test
 def split_all_data(patch_directory, split: list, seed):
     '''
@@ -161,8 +161,9 @@ class HER2Dataset(Dataset):
             image = self.transform(image)
         
         her2_status = self.status[idx] # Load corresponding image her2 status
+        case_id = self.img_cases[idx]
 
-        return image, her2_status # Return transformed image and label
+        return image, her2_status, case_id # Return transformed image and label and case_id for image
 
 def get_her2_status_list():
 
@@ -177,9 +178,9 @@ def get_her2_status_list():
 
     df['Clinical.HER2.status'] = df['Clinical.HER2.status'].map({'Negative': 0, 'Positive': 1}).astype(int)
 
-    dict = df.set_index('Case ID').to_dict()['Clinical.HER2.status']
+    dictt = df.set_index('Case ID').to_dict()['Clinical.HER2.status']
 
-    return dict
+    return dictt
 
 def split_tumour_data(patch_directory, label_directory, split: list, seed):
     '''
@@ -379,14 +380,14 @@ def get_seg_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False
     
     return train_cases, val_cases, test_cases, dataloaders
 
-def split_her2():
+def split_her2(SEED):
     
     torch.manual_seed(SEED)
     # using full set of data
     img_dir = '/home/21576262@su/masters/data/patches/'
     labels_dir = '/home/21576262@su/masters/data/labels/'
     
-    all_cases = os.listdir(label_directory)
+    all_cases = os.listdir(img_dir)
 
     # Split the data into 70% training and 15% validation, 15% test
     train_cases, temp_data = train_test_split(all_cases, test_size=0.30, random_state=SEED)
@@ -394,7 +395,7 @@ def split_her2():
     
     return train_cases, val_cases, test_cases
 
-def her2_dataloaders(batch_size, SEED, train_img_folders, val_img_folders, test_img_folders, Inception=False, InceptionResnet=False):
+def her2_dataloaders(batch_size, SEED, train_cases, val_cases, test_cases, Inception=False, InceptionResnet=False):
     
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
@@ -432,7 +433,7 @@ def her2_dataloaders(batch_size, SEED, train_img_folders, val_img_folders, test_
     
     # Create training, validation and test dataloaders
     dataloaders = {
-        'train': data_utils.DataLoader(image_datasets['train'], sampler=weighted_sampler, batch_size=batch_size, num_workers=num_cpus, shuffle=True, drop_last=True),
+        'train': data_utils.DataLoader(image_datasets['train'], sampler=weighted_sampler, batch_size=batch_size, num_workers=num_cpus),
         'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=num_cpus, shuffle=True),
         'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
     }
@@ -494,6 +495,26 @@ def get_test_dataloader(subfolders, batch_size, Inception=False, InceptionResnet
     test_dataloader = data_utils.DataLoader(test_dataset, batch_size=batch_size, num_workers=num_cpus, shuffle=True)
     return test_dataloader
 
+def get_her2test_dataloader(subfolders, batch_size, Inception=False, InceptionResnet=False):
+    '''
+    Given list of subfolders, extract all patches in them and put into a test dataloader.
+    '''
+    
+    PATCH_SIZE=256
+    STRIDE=PATCH_SIZE
+    num_cpus=4
+    main_dir = '/home/21576262@su/masters/data/patches/'
+    labels_dir = '/home/21576262@su/masters/data/labels/' 
+    test_img_folders = [main_dir + case for case in subfolders]
+    test_labels = [labels_dir + case + '.pt' for case in subfolders]
+    
+    data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
+
+    test_dataset = HER2Dataset(test_img_folders, test_labels, transform=data_transforms['test'])
+    # Create dataloader
+    test_dataloader = data_utils.DataLoader(test_dataset, batch_size=batch_size, num_workers=num_cpus, shuffle=False, drop_last=False)
+    return test_dataloader
+
 def kfolds_split(k, seed):
     '''
     Given all data, split into k folds and return case names for each fold.
@@ -522,43 +543,43 @@ def kfolds_split(k, seed):
         
     return splits
 
-# def get_her2status_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False):
+def get_her2status_dataloaders(batch_size, SEED, Inception=False, InceptionResnet=False):
     
-#     PATCH_SIZE=256
-#     STRIDE=PATCH_SIZE
-#     num_cpus=4
+    PATCH_SIZE=256
+    STRIDE=PATCH_SIZE
+    num_cpus=4
     
-#     data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
+    data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
     
-#     # using full set of data
-#     img_dir = '/home/21576262@su/masters/data/patches/'
-#     labels_dir = '/home/21576262@su/masters/data/labels/' 
+    # using full set of data
+    img_dir = '/home/21576262@su/masters/data/patches/'
+    labels_dir = '/home/21576262@su/masters/data/labels/' 
 
-#     split=[70, 15, 15] # for splitting into train/val/test
+    split=[70, 15, 15] # for splitting into train/val/test
 
-#     train_cases, val_cases, test_cases = split_tumour_data(img_dir, labels_dir, split, SEED)
+    train_cases, val_cases, test_cases = split_tumour_data(img_dir, labels_dir, split, SEED)
 
-#     train_img_folders = [img_dir + case for case in train_cases]
-#     val_img_folders = [img_dir + case for case in val_cases]
-#     test_img_folders = [img_dir + case for case in test_cases]
+    train_img_folders = [img_dir + case for case in train_cases]
+    val_img_folders = [img_dir + case for case in val_cases]
+    test_img_folders = [img_dir + case for case in test_cases]
 
-#     # Contains the file path for each .pt file for the cases used in each of the sets
-#     train_labels = [labels_dir + case + '.pt' for case in train_cases]
-#     val_labels = [labels_dir + case + '.pt' for case in val_cases]
-#     test_labels = [labels_dir + case + '.pt' for case in test_cases]
+    # Contains the file path for each .pt file for the cases used in each of the sets
+    train_labels = [labels_dir + case + '.pt' for case in train_cases]
+    val_labels = [labels_dir + case + '.pt' for case in val_cases]
+    test_labels = [labels_dir + case + '.pt' for case in test_cases]
 
-#     image_datasets = {
-#         'train': HER2Dataset(train_img_folders, train_labels, transform=data_transforms['train']),
-#         'val': HER2Dataset(val_img_folders, val_labels, transform=data_transforms['val']),
-#         'test': HER2Dataset(test_img_folders, test_labels, transform=data_transforms['test'])
-#     }
-#     # Create training, validation and test dataloaders
-#     dataloaders = {
-#         'train': data_utils.DataLoader(image_datasets['train'], batch_size=batch_size, num_workers=num_cpus, shuffle=True, drop_last=True),
-#         'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=num_cpus, shuffle=True),
-#         'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
-#     }
+    image_datasets = {
+        'train': HER2Dataset(train_img_folders, train_labels, transform=data_transforms['train']),
+        'val': HER2Dataset(val_img_folders, val_labels, transform=data_transforms['val']),
+        'test': HER2Dataset(test_img_folders, test_labels, transform=data_transforms['test'])
+    }
+    # Create training, validation and test dataloaders
+    dataloaders = {
+        'train': data_utils.DataLoader(image_datasets['train'], batch_size=batch_size, num_workers=num_cpus, shuffle=True, drop_last=True),
+        'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=num_cpus, shuffle=True),
+        'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
+    }
     
-#     print(f"Total tumour patches: {len(dataloaders['train'])*batch_size + len(dataloaders['val'])*batch_size + len(dataloaders['test'])*batch_size} \nNumber of training patches: {len(dataloaders['train'])*batch_size} \nNumber of validation patches {len(dataloaders['val'])*batch_size} \nNumber of test patches {len(dataloaders['test'])*batch_size}")
+    print(f"Total tumour patches: {len(dataloaders['train'])*batch_size + len(dataloaders['val'])*batch_size + len(dataloaders['test'])*batch_size} \nNumber of training patches: {len(dataloaders['train'])*batch_size} \nNumber of validation patches {len(dataloaders['val'])*batch_size} \nNumber of test patches {len(dataloaders['test'])*batch_size}")
     
-#     return train_cases, val_cases, test_cases, dataloaders
+    return train_cases, val_cases, test_cases, dataloaders

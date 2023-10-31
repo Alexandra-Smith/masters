@@ -9,7 +9,7 @@ import timm
 import math
 from torch.optim.lr_scheduler import _LRScheduler
 
-def inceptionv4(num_classes, checkpoint_path=None):
+def INCEPTIONv4(num_classes):
     
     initial_learning_rate=0.045
     learning_rate_decay=0.94
@@ -29,6 +29,7 @@ def inceptionv4(num_classes, checkpoint_path=None):
         nn.ReLU(inplace=True),
         nn.Dropout(p=0.7),
         nn.Linear(model.get_classifier().in_features, num_classes)
+    )
     
     optimiser = optim.RMSprop(model.parameters(), 
                               lr=initial_learning_rate,
@@ -40,7 +41,7 @@ def inceptionv4(num_classes, checkpoint_path=None):
     
     return model, optimiser, criterion, parameters, scheduler
 
-def inceptionresnetv2(num_classes, checkpoint_path=None):
+def INCEPTIONRESNETv2(num_classes):
     
     initial_learning_rate=0.045
     learning_rate_decay=0.94
@@ -123,7 +124,7 @@ def RESNET18(num_classes):
 
     return model, optimiser, criterion, parameters, None
 
-def INCEPTIONv3(num_classes, checkpoint_path=None):
+def INCEPTIONv3(num_classes):
     
     # Hyperparameters
     # WEIGHT_DECAY = 0.9                  # Decay term for RMSProp.
