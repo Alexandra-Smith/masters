@@ -21,13 +21,24 @@ from collections import Counter
 from matplotlib.colors import LinearSegmentedColormap
 
 def main():
-    train_cases, val_cases, test_cases = split_her2(SEED=42)
     
-    cd, custom_grn = define_colours()
-
+    # Number of classes in the dataset
+    num_classes = 2
+    # Batch size for training
+    batch_size = 32
+    # Number of epochs to train for
+    num_epochs = 50
+    
+    SEED=42
+    train_cases, val_cases, test_cases = split_her2(SEED)
+    
+    PATCH_SIZE=256
+    STRIDE=PATCH_SIZE
+    num_cpus=8
+    
     img_dir = '/home/21576262@su/masters/data/patches/'
     labels_dir = '/home/21576262@su/masters/data/labels/'
-
+    
     train_img_folders = [img_dir + case for case in train_cases]
     val_img_folders = [img_dir + case for case in val_cases]
     test_img_folders = [img_dir + case for case in test_cases]
@@ -36,35 +47,70 @@ def main():
     train_labels = [labels_dir + case + '.pt' for case in train_cases]
     val_labels = [labels_dir + case + '.pt' for case in val_cases]
     test_labels = [labels_dir + case + '.pt' for case in test_cases]
-
-    PATCH_SIZE=256
-    STRIDE=PATCH_SIZE
-    num_cpus=4
-    batch_size=32
-
-    data_transforms = define_transforms(PATCH_SIZE, isInception=True, isInceptionResnet=False)
-
-    dataset = HER2Dataset(train_img_folders, train_labels, transform=data_transforms['train'])
-
-    labels = [label for _, label, _ in dataset]
-    label_counts = Counter(labels)
-
-    class_counts = [label_counts[0], label_counts[1]]
     
-    print(class_counts)
+    data_transforms = define_transforms(PATCH_SIZE, isInception=False, isInceptionResnet=False)
+    
+    image_datasets = {
+    'train': HER2Dataset(train_img_folders, train_labels, transform=data_transforms['train']),
+    'val': HER2Dataset(val_img_folders, val_labels, transform=data_transforms['val']),
+    'test': HER2Dataset(test_img_folders, test_labels, transform=data_transforms['test'])
+    }
+    
+    labels_val = [label for _, label, _ in image_datasets['val']]
+    label_counts_val = Counter(labels_val)
+    class_counts_val = [label_counts_val[0], label_counts_val[1]]
+    print(f"Validation counts {class_counts_val}")
+    
+    labels_test = [label for _, label, _ in image_datasets['test']]
+    label_counts_test = Counter(labels_test)
+    class_counts_test = [label_counts_test[0], label_counts_test[1]]
+    print(f"Test counts {class_counts_test}")
+    
+        
+#     train_cases, val_cases, test_cases = split_her2(SEED=42)
+    
+#     cd, custom_grn = define_colours()
 
-    # Compute class weights
-    class_weights = 1. / torch.tensor(class_counts, dtype=torch.float)
-    weights = [class_weights[i] for i in labels]  # dataset_targets are your labels
-    weighted_sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+#     img_dir = '/home/21576262@su/masters/data/patches/'
+#     labels_dir = '/home/21576262@su/masters/data/labels/'
 
-    # Create dataloader
-    dataloader = data_utils.DataLoader(dataset, batch_size=batch_size, num_workers=num_cpus)
-    weighted_dataloader = data_utils.DataLoader(dataset, sampler=weighted_sampler, batch_size=batch_size, num_workers=num_cpus)
+#     train_img_folders = [img_dir + case for case in train_cases]
+#     val_img_folders = [img_dir + case for case in val_cases]
+#     test_img_folders = [img_dir + case for case in test_cases]
 
-    class_0_batch_counts, class_1_batch_counts, ids_seen = visualise_dataloader(dataloader, "original.jpg", {0: "HER2-", 1: "HER2+"})
+#     # Contains the file path for each .pt file for the cases used in each of the sets
+#     train_labels = [labels_dir + case + '.pt' for case in train_cases]
+#     val_labels = [labels_dir + case + '.pt' for case in val_cases]
+#     test_labels = [labels_dir + case + '.pt' for case in test_cases]
 
-    class_0_batch_counts, class_1_batch_counts, ids_seen = visualise_dataloader(weighted_dataloader, "weighted.jpg", {0: "HER2-", 1: "HER2+"})
+#     PATCH_SIZE=256
+#     STRIDE=PATCH_SIZE
+#     num_cpus=4
+#     batch_size=32
+
+#     data_transforms = define_transforms(PATCH_SIZE, isInception=True, isInceptionResnet=False)
+
+#     dataset = HER2Dataset(train_img_folders, train_labels, transform=data_transforms['train'])
+
+#     labels = [label for _, label, _ in dataset]
+#     label_counts = Counter(labels)
+
+#     class_counts = [label_counts[0], label_counts[1]]
+    
+#     print(class_counts)
+
+#     # Compute class weights
+#     class_weights = 1. / torch.tensor(class_counts, dtype=torch.float)
+#     weights = [class_weights[i] for i in labels]  # dataset_targets are your labels
+#     weighted_sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+
+#     # Create dataloader
+#     dataloader = data_utils.DataLoader(dataset, batch_size=batch_size, num_workers=num_cpus)
+#     weighted_dataloader = data_utils.DataLoader(dataset, sampler=weighted_sampler, batch_size=batch_size, num_workers=num_cpus)
+
+#     class_0_batch_counts, class_1_batch_counts, ids_seen = visualise_dataloader(dataloader, "original.jpg", {0: "HER2-", 1: "HER2+"})
+
+#     class_0_batch_counts, class_1_batch_counts, ids_seen = visualise_dataloader(weighted_dataloader, "weighted.jpg", {0: "HER2-", 1: "HER2+"})
 
     
 def define_colours():

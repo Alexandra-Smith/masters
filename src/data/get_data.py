@@ -399,7 +399,7 @@ def her2_dataloaders(batch_size, SEED, train_cases, val_cases, test_cases, Incep
     
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
-    num_cpus=4
+    num_cpus=8
     
     img_dir = '/home/21576262@su/masters/data/patches/'
     labels_dir = '/home/21576262@su/masters/data/labels/'
@@ -421,7 +421,7 @@ def her2_dataloaders(batch_size, SEED, train_cases, val_cases, test_cases, Incep
     'test': HER2Dataset(test_img_folders, test_labels, transform=data_transforms['test'])
     }
     
-    labels = [label for _, label in image_datasets["train"]]
+    labels = [label for _, label, _ in image_datasets["train"]]
     label_counts = Counter(labels)
         
     class_counts = [label_counts[0], label_counts[1]]
@@ -435,7 +435,7 @@ def her2_dataloaders(batch_size, SEED, train_cases, val_cases, test_cases, Incep
     dataloaders = {
         'train': data_utils.DataLoader(image_datasets['train'], sampler=weighted_sampler, batch_size=batch_size, num_workers=num_cpus),
         'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=num_cpus, shuffle=True),
-        'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=True)
+        'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=False)
     }
     
     print(f"Total tumour patches: {len(dataloaders['train'])*batch_size + len(dataloaders['val'])*batch_size + len(dataloaders['test'])*batch_size} \nNumber of training patches: {len(dataloaders['train'])*batch_size} \nNumber of validation patches {len(dataloaders['val'])*batch_size} \nNumber of test patches {len(dataloaders['test'])*batch_size}")

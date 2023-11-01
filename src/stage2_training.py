@@ -66,7 +66,7 @@ def train_model(model, device, dataloaders, progress, criterion, optimizer, num_
             if phase == 'val':
                 loss_valid = epoch_loss
                 acc_valid = epoch_acc
-                vaid_f1 = f1_score(true_labels, all_preds)
+                valid_f1 = f1_score(true_labels, all_preds)
             print(f'Epoch {epoch + 1}/{num_epochs}, {phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
         
         print()
