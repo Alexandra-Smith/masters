@@ -108,7 +108,8 @@ def main():
     
     # LOAD ALL MODELS
     # Define a list of model names (matching the function names in initialise_models)
-    model_names = ['RESNET34', 'RESNET18', 'INCEPTIONRESNETv2', 'INCEPTIONv4', 'INCEPTIONv3']
+    # model_names = ['RESNET34', 'RESNET18', 'INCEPTIONRESNETv2', 'INCEPTIONv4', 'INCEPTIONv3']
+    model_names = ['INCEPTIONRESNETv2', 'INCEPTIONv4', 'INCEPTIONv3']
     model_containers = []
     for model_name in model_names:
         init_function = getattr(initialise_models, model_name)
