@@ -186,7 +186,9 @@ def main():
     # model_names = ['glamorous-eon-111', 'gallant-elevator-110', 'valiant-wave-109', 'celestial-frog-108', 'sunny-lion-107']
     
     # Gamble params
-    model_names = ['cool-cloud-122', 'cool-snow-121', 'worthy-valley-120', 'dandy-dew-119', 'valiant-frost-118']
+    # model_names = ['cool-cloud-122', 'cool-snow-121', 'worthy-valley-120', 'dandy-dew-119', 'valiant-frost-118']
+    
+    model_names = ['avid-grass-133', 'floral-valley-132', 'stellar-fog-131', 'wise-firefly-130', 'silver-blaze-129']
     
     results = []
     

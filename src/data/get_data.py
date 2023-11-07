@@ -399,7 +399,7 @@ def her2_dataloaders(batch_size, SEED, train_cases, val_cases, test_cases, Incep
     
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
-    num_cpus=4
+    num_cpus=8
     
     img_dir = '/home/21576262@su/masters/data/patches/'
     labels_dir = '/home/21576262@su/masters/data/labels/'
