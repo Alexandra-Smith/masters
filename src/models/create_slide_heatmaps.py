@@ -23,20 +23,15 @@ from models.inception_model import InceptionV3
 def main():
     Image.MAX_IMAGE_PIXELS = None
 
-    cd, custom_prpl2yel, custom_pnk2gr = define_colours()
+    # cd, custom_prpl2yel, custom_pnk2gr = define_colours()
 
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
     num_classes=2
-    images_directory = '/Volumes/AlexS/MastersData/SVS files/'
-    labels_directory = '/Volumes/AlexS/MastersData/processed/labels/'
 
     model_name = 'silver-blaze-129'
-    
     # Read from datasplit.json file
     file_path='/Users/alexandrasmith/Desktop/Workspace/Projects/masters/models/data_splits/' + model_name + '.json'
-
-
     with open(file_path, 'r') as json_file:
         datasplit = json.load(json_file)
     # Get cases used in testing split
@@ -51,6 +46,7 @@ def main():
     model = model.to(device)
 
     for case in cases_list:
+        print(f"Case: {case}")
         # perform inference
         sld, slide = choose_image(case)
         visualise_gt_classes(case)
@@ -61,6 +57,7 @@ def main():
 
         # visualise_probabilities_map(heatmap_probs, colourmap='jet')
         visualise_heatmap_over_image(sld, slide, heatmap_probs, colourmap='jet')
+        print("Done!")
 
 
 def define_colours():
