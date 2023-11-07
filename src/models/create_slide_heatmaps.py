@@ -1,9 +1,9 @@
 import torch
-import torch.nn as nn
 import os
 import numpy as np
-import random
 import json
+from matplotlib import colors as mcolors
+import colorsys
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from openslide import open_slide
@@ -14,7 +14,6 @@ from skimage.transform import resize
 import matplotlib.colors as colors
 from torchvision import transforms
 import sys
-import timm
 from torchvision.transforms import InterpolationMode
 from PIL import Image
 sys.path.append('/Users/alexandrasmith/Desktop/Workspace/Projects/masters/src')
@@ -54,11 +53,22 @@ def main():
         patch_objects = get_patch_objects(patches, positions)
         image_size = slide.shape
         heatmap_probs, heatmap_classes = inference(image_size[0:2], patch_objects, model)
-
+        del (patch_objects)
         # visualise_probabilities_map(heatmap_probs, colourmap='jet')
-        visualise_heatmap_over_image(sld, slide, heatmap_probs, colourmap='jet')
+        cmap = plt.cm.get_cmap("jet")
+        visualise_classification_map(case, heatmap_classes)
+        visualise_heatmap_over_image(case, sld, slide, heatmap_probs, colourmap=man_cmap(cmap, 1.25), prob=0.2)
+        visualise_heatmap_over_image(case, sld, slide, heatmap_probs, colourmap=man_cmap(cmap, 1.25), prob=0.4)
+        del(sld)
+        del(slide)
         print("Done!")
 
+def man_cmap(cmap, value=1.):
+    colors = cmap(np.arange(cmap.N))
+    hls = np.array([colorsys.rgb_to_hls(*c) for c in colors[:,:3]])
+    hls[:,1] *= value
+    rgb = np.clip(np.array([colorsys.hls_to_rgb(*c) for c in hls]), 0,1)
+    return mcolors.LinearSegmentedColormap.from_list("", rgb)
 
 def define_colours():
     M_darkpurple = '#783CBB'
@@ -270,11 +280,10 @@ def choose_image(case):
     mac_dir = '/Volumes/AlexS/MastersData/SVS files/'
     # List all files in the directory
     file_list = os.listdir(mac_dir)
-    # matching_casefile = next((s for s in file_list if case in s), None)
-    # if matching_casefile == None:
-    #     raise ValueError(f"No matching SVS casefile in folder for given case id {case}")
-    # img_path =
-    img_path = [file for file in file_list if file.startswith(case)][0]
+    img_path = next((s for s in file_list if case in s), None)
+    if img_path == None:
+        raise ValueError(f"No matching SVS casefile in folder for given case id {case}")
+    # img_path = [file for file in file_list if file.startswith(case)][0]
     slide_path = os.path.join(mac_dir, img_path)
     sld = open_slide(slide_path)
     slide_props = sld.properties
@@ -494,12 +503,12 @@ def visualise_thumbnail(case, im, title):
     plt.imshow(thumbnail, cmap="gray")
     # plt.title(title)
     plt.axis('off')
-    file_name = '/Users/alexandrasmith/Desktop/Workspace/Projects/masters/reports/results/avid-grass-133/' + case + title 
+    file_name = '/Volumes/AlexS/MastersData/results/stage1-silver-blaze-model/' + case + title 
     plt.savefig(file_name + '.png', bbox_inches='tight', pad_inches=0.0)
-    plt.savefig(file_name + '.svs', format="svs", bbox_inches='tight', pad_inches=0.0)
+    plt.savefig(file_name + '.svg', format="svg", bbox_inches='tight', pad_inches=0.0)
     plt.close()
 
-def visualise_classification_map(heatmap):
+def visualise_classification_map(case, heatmap):
     '''
     Create visual of predicted classes. 
     Converts the given array containing None, 0, 1 to the values 0, 0.5, 1 needed for display purposes.
@@ -517,7 +526,7 @@ def visualise_classification_map(heatmap):
                 output[i, j] = 1 # malignant tissue
             else:
                 raise Exception("Heatmap of predicted classes contains values other than None, 0 or 1")
-    visualise_thumbnail(output, "Predicted class labels")
+    visualise_thumbnail(case, output, "_predicted_class_labels")
 
 def visualise_gt_classes(case):
 
@@ -546,7 +555,7 @@ def visualise_probabilities_map(heatmap_probs, colourmap):
     # plt.title("Predicted tumour probabilities")
     plt.axis('off')
 
-def visualise_heatmap_over_image(case, slide, image, heatmap_probabilities, colourmap):
+def visualise_heatmap_over_image(case, slide, image, heatmap_probabilities, colourmap, prob):
     '''
     Returns heatmap of probabilities overlaid on the original histopathology image.
     Given
@@ -555,7 +564,7 @@ def visualise_heatmap_over_image(case, slide, image, heatmap_probabilities, colo
     '''
     image_size = image.shape[0:2]
     # Create mask for probabilities
-    mask = heatmap_probabilities < 0.4
+    mask = heatmap_probabilities < prob
     heatmap = heatmap_probabilities.copy()
     heatmap[mask] = np.nan
 
@@ -572,9 +581,9 @@ def visualise_heatmap_over_image(case, slide, image, heatmap_probabilities, colo
     plt.axis('off')
     cax = fig.add_axes([ax.get_position().x1+0.01,ax.get_position().y0,0.02,ax.get_position().height])
     plt.colorbar(im, cax=cax)
-    file_name = '/Users/alexandrasmith/Desktop/Workspace/Projects/masters/reports/results/avid-grass-133/' + case + "_heatmap" 
+    file_name = '/Volumes/AlexS/MastersData/results/stage1-silver-blaze-model/' + case + "_heatmap_" + str(prob)
     plt.savefig(file_name + '.png', bbox_inches='tight', pad_inches=0.0)
-    plt.savefig(file_name + '.svs', format="svs", bbox_inches='tight', pad_inches=0.0)
+    plt.savefig(file_name + '.svg', format="svg", bbox_inches='tight', pad_inches=0.0)
     plt.close(fig)
 
 if __name__=="__main__":
