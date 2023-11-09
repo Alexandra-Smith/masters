@@ -124,6 +124,25 @@ def RESNET18(num_classes):
 
     return model, optimiser, criterion, parameters, None
 
+def RESNET50(num_classes):
+    # Model parameters
+    learning_rate = 0.001
+    parameters = {"learning_rate": learning_rate}
+
+    model = models.resnet50()
+    # Modify the last layer for binary classification (output 2 classes)    
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs, num_classes)
+        
+    # Setup optimiser
+    optimiser = optim.Adam(model.parameters(),
+                           lr=learning_rate,
+                          )
+    # Setup the loss fxn
+    criterion = nn.CrossEntropyLoss()
+
+    return model, optimiser, criterion, parameters, None
+
 def INCEPTIONv3(num_classes):
     
     # Hyperparameters
