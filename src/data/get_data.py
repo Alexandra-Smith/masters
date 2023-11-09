@@ -60,11 +60,11 @@ def split_all_data(patch_directory, split: list, seed):
     Function that takes in the split percentage for train/val/test sets, and randomly chooses which cases
     to allocate to which set (to ensure all patches from one case go into one set)
     Parameters:
-    patch_directory: folder containing all patches
-    split: list of integers for splitting sets
-    seed: option to set the seed value for randomness
+        patch_directory: folder containing all patches
+        split: list of integers for splitting sets
+        seed: option to set the seed value for randomness
     Returns:
-    3 lists for each of train/val/test, where each list contains the case names to be used in the set
+        3 lists for each of train/val/test, where each list contains the case names to be used in the set
     '''
     
     random.seed(seed)
@@ -514,6 +514,26 @@ def get_her2test_dataloader(subfolders, batch_size, Inception=False, InceptionRe
     # Create dataloader
     test_dataloader = data_utils.DataLoader(test_dataset, batch_size=batch_size, num_workers=num_cpus, shuffle=False, drop_last=False)
     return test_dataloader
+
+
+def get_her2test_dataset(subfolders, batch_size, Inception=False, InceptionResnet=False):
+    '''
+    Given list of subfolders, extract all patches in them and put into a test dataloader.
+    '''
+    
+    PATCH_SIZE=256
+    STRIDE=PATCH_SIZE
+    num_cpus=4
+    main_dir = '/home/21576262@su/masters/data/patches/'
+    labels_dir = '/home/21576262@su/masters/data/labels/' 
+    test_img_folders = [main_dir + case for case in subfolders]
+    test_labels = [labels_dir + case + '.pt' for case in subfolders]
+    
+    data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
+
+    test_dataset = HER2Dataset(test_img_folders, test_labels, transform=data_transforms['test'])
+    
+    return test_dataset
 
 def kfolds_split(k, seed):
     '''
