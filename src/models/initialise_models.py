@@ -17,12 +17,38 @@ def INCEPTIONv4(num_classes):
     
     rms_decay=0.9
     epsilon=1.0
-        
+    
+    # Coudray
+    # initial_learning_rate=0.1
+    # learning_rate_decay=0.16
+    # Gamble
+    # initial_learning_rate=0.0055
+    # learning_rate_decay=0.9
+    # initial_learning_rate=0.0055
+    # learning_rate_decay=0.16
+
+    momentum=0.9
+    
     parameters = {"learning_rate": initial_learning_rate,
-                  "learning_rate_decay": learning_rate_decay, 
+                  "learning_rate_decay": learning_rate_decay,
+                  "momentum": momentum, 
                   "epsilon": epsilon, 
                   "RMS_decay/alpha": rms_decay,
                   "weight_decay/L2": weight_decay}
+        
+#     # Freeze all the parameters
+#     for param in model.parameters():
+#         param.requires_grad = False
+
+#     # Set the last n layers to trainable
+#     for param in list(model.parameters())[-15:]:
+#         param.requires_grad = True
+        
+    # parameters = {"learning_rate": initial_learning_rate,
+    #               "learning_rate_decay": learning_rate_decay, 
+    #               "epsilon": epsilon, 
+    #               "RMS_decay/alpha": rms_decay,
+    #               "weight_decay/L2": weight_decay}
                   
     model = timm.create_model('inception_v4', pretrained=False, num_classes=num_classes) 
     model.classif = nn.Sequential(
@@ -34,6 +60,7 @@ def INCEPTIONv4(num_classes):
     optimiser = optim.RMSprop(model.parameters(), 
                               lr=initial_learning_rate,
                               alpha=rms_decay,
+                              momentum=momentum,
                               eps=epsilon, 
                               weight_decay=weight_decay)
     scheduler = optim.lr_scheduler.StepLR(optimiser, step_size=2, gamma=learning_rate_decay)
@@ -49,12 +76,21 @@ def INCEPTIONRESNETv2(num_classes):
     
     rms_decay=0.9
     epsilon=1.0
-        
+    
+    momentum=0.9
+    
     parameters = {"learning_rate": initial_learning_rate,
-                  "learning_rate_decay": learning_rate_decay, 
+                  "learning_rate_decay": learning_rate_decay,
+                  "momentum": momentum, 
                   "epsilon": epsilon, 
                   "RMS_decay/alpha": rms_decay,
                   "weight_decay/L2": weight_decay}
+        
+    # parameters = {"learning_rate": initial_learning_rate,
+    #               "learning_rate_decay": learning_rate_decay, 
+    #               "epsilon": epsilon, 
+    #               "RMS_decay/alpha": rms_decay,
+    #               "weight_decay/L2": weight_decay}
         
     model = timm.create_model('inception_resnet_v2', pretrained=False, num_classes=num_classes)
     model.classif = nn.Sequential(
@@ -66,6 +102,7 @@ def INCEPTIONRESNETv2(num_classes):
     optimiser = optim.RMSprop(model.parameters(), 
                               lr=initial_learning_rate,
                               alpha=rms_decay,
+                              momentum=momentum,
                               eps=epsilon, 
                               weight_decay=weight_decay)
     scheduler = optim.lr_scheduler.StepLR(optimiser, step_size=2, gamma=learning_rate_decay)

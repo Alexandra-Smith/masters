@@ -1,16 +1,22 @@
 import timm
 import torch
 import torchvision
-from .inception_model import InceptionV3
+import torch.nn as nn
 from torchvision import models
 import matplotlib.pyplot as plt
 import json
+import numpy as np
 import sys
+import os
+from tqdm import tqdm
+import pandas as pd
 from sklearn import metrics
+import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap
 from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, ConfusionMatrixDisplay
 sys.path.append('/home/21576262@su/masters/')
 from src.data.get_data import get_her2test_dataloader
+from src.models.inception_model import InceptionV3
 
 def main():
     ##### SET PARAMETERS #####
@@ -24,9 +30,8 @@ def main():
     SEED=42
     num_cpus=8
     
-    model_names = {'occult-newt-137': 'RESNET34', 'fresh-firefly-138': 'RESNET18', 'morning-glitter-146': 'RESNET50', 'glamorous-firefly-147': 'INCEPTIONv3', 'magic-frost-148': 'INCEPTIONv4', '??' : 'INCEPTIONRESNETv2'}
+    model_names = {'occult-newt-137': 'RESNET34', 'fresh-firefly-138': 'RESNET18', 'morning-glitter-146': 'RESNET50', 'glamorous-firefly-147': 'INCEPTIONv3', 'magic-frost-148': 'INCEPTIONv4', 'gallant-sea-150' : 'INCEPTIONRESNETv2'}
     results = []
-    print(model_name.keys())
     # Test each model
     for name in model_names.keys():
         print(f"Testing model: {name}")
@@ -37,15 +42,15 @@ def main():
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = model.to(device) # send model to GPU
         
-        InceptionResnet = True if model_names[model_name]=='INCEPTIONRESNETv2' else False
-        Inception = True if (model_names[model_name]=='INCEPTIONv3' or model_names[model_name]=='INCEPTIONv4') else False
+        isInceptionResnet = True if model_names[name]=='INCEPTIONRESNETv2' else False
+        isInception = True if (model_names[name]=='INCEPTIONv3' or model_names[name]=='INCEPTIONv4') else False
         
         # Get info on model data split
         json_path = os.path.join('masters/models/data_splits/', name + '.json')
         with open(json_path, 'r') as file:
             data = json.load(file)
         testing_folders = data['test']
-        test_dataloader = get_her2test_dataloader(testing_folders, batch_size, Inception=isInception, InceptionResnet=isInceptionResnet, Resnet=isResnet) # testing subset for this model
+        test_dataloader = get_her2test_dataloader(testing_folders, batch_size, Inception=isInception, InceptionResnet=isInceptionResnet) # testing subset for this model
 
         # Test model
         true_labels, model_probabilities, model_predictions = test_model(model, test_dataloader, device)
@@ -72,7 +77,55 @@ def main():
     # Convert the list of dictionaries to a pandas DataFrame
     df = pd.DataFrame(results)
     # Save to JSON
-    df.to_json('masters/reports/results/stage2_cv_results.json', orient='records')
+    df.to_json('masters/reports/results/stage2_all_results.json', orient='records')
+
+def test_model(model, test_loader, device):
+    
+    correct = 0
+    total = 0
+    
+    # Create a progress bar
+    progress_bar = tqdm(test_loader, desc='Testing', unit='batch')
+
+    with torch.no_grad():
+        true_labels = []
+        predictions = []
+        probabilities = []
+        for inputs, labels, case_ids in progress_bar:
+            # move to device
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+            true_labels.extend(labels.tolist())
+
+            # Forward pass
+            outputs = model(inputs)
+            if isinstance(outputs, tuple):
+                outputs = outputs[0]
+            probs = torch.softmax(outputs, dim=1)
+            # Get predicted labels
+            _, predicted = torch.max(outputs.data, 1)
+
+            # Update variables
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+            probabilities.extend(probs.tolist())
+            predictions.extend(predicted.tolist())
+
+            # Update progress bar description
+            progress_bar.set_postfix({'Accuracy': '{:.2f}%'.format((correct / total) * 100)})
+    
+    # # Compute accuracy (testing for now) --delete
+    accuracy = 100 * correct / total
+    print('Test Accuracy: {:.2f}%'.format(accuracy))
+    # Close the progress bar
+    progress_bar.close()
+    
+    return true_labels, probabilities, predictions
+
+def get_metrics(y_test, predictions):
+    report = metrics.classification_report(y_test, predictions)
+    return report
 
 def load_trained_models(num_classes, model_path, model_architecture):
     
@@ -109,8 +162,7 @@ def load_trained_models(num_classes, model_path, model_architecture):
     model.load_state_dict(torch.load(model_path))
     model.eval()
 
-    return model
-    
+    return model  
     
 def roc_plot(y_test, model_probabilities, model_name, colours):
     # keep probabilities for the positive outcome only
@@ -157,7 +209,6 @@ def plot_confusion_matrix(y_test, predictions, model_name, colourmap):
 def define_colours():
     M_darkpurple = '#783CBB'
     M_lightpurple = '#A385DB'
-    # M_green = '#479C8A'
     M_green = '#0a888a'
     M_yellow = '#FFDD99'
     M_lightpink = '#EFA9CD'
