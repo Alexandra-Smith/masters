@@ -22,11 +22,13 @@ def main():
     SEED=42
     num_cpus=8
     
-    model_names = {'occult-newt-137': 'RESNET34', 'fresh-firefly-138': 'RESNET18', 'morning-glitter-146': 'RESNET50', 'glamorous-firefly-147': 'INCEPTIONv3', 'magic-frost-148': 'INCEPTIONv4', '??' : 'INCEPTIONRESNETv2'}
+    # model_names = {'occult-newt-137': 'RESNET34', 'fresh-firefly-138': 'RESNET18', 'morning-glitter-146': 'RESNET50', 'glamorous-firefly-147': 'INCEPTIONv3', 'magic-frost-148': 'INCEPTIONv4', '??' : 'INCEPTIONRESNETv2'}
 
     # Test each model
     for name in model_names.keys():
         scores = []
+        slide_scores = []
+        
         print(f"Testing model: {name}")
         # Load model
         model_path = os.path.join('masters/models/', name + '_model_weights.pth')
@@ -45,18 +47,23 @@ def main():
         original_dataset = get_her2test_dataset(testing_folders, batch_size, Inception=isInception, InceptionResnet=isInceptionResnet, Resnet=isResnet) # original data, testing subset for this model
         n_samples=len(original_dataset)
         # bootstrapping 1000 iterations
-        for i in range(1000):
+        for i in range(500):
             # Get bootstrapped (sub)set of data
             bootstrapped_dataset = create_bootstrapped_dataset(dataset, n_samples)
-            bootstrapped_dataloader = DataLoader(bootstrapped_dataset, batch_size=batch_size, num_workers=num_cpus, shuffle=True, drop_last=False)
+            bootstrapped_dataloader = DataLoader(bootstrapped_dataset, batch_size=batch_size, num_workers=num_cpus, shuffle=False, drop_last=False)
 
             # Test model
-            true_labels, model_probabilities, model_predictions = test_model(model, bootstrapped_dataloader, device) 
+            case_ids, true_labels, probabilities, predictions = test_model(model, bootstrapped_dataloader, device) 
+            # patch-level AUC for samples in bootstrapped set
             auc_score = roc_auc_score(true_labels, model_predictions)
             scores.append(auc_score)
+            
+            # slide-level AUC
+            
         
         if len(scores) != 1000:
             raise ValueError("Not enough AUC scores (<1000)")
+        # all 1000 AUC scores for this model (for later inference)
         auc_scores = np.array(scores)
         file_name = os.path.join('/home/21576262@su/masters/reports/bootstrapping', 'auc_scores_' + name + '.csv')
         np.savetxt(file_name, auc_scores, delimiter=",")
@@ -75,6 +82,69 @@ def create_bootstrapped_dataset(dataset, n_samples):
     # Subset the dataset with the generated indices
     bootstrapped_data = torch.utils.data.Subset(dataset, indices)
     return bootstrapped_data
+
+def create_bootstrapped_dataset_for_slides(testing_folders, batch_size, Inception=isInception, InceptionResnet=isInceptionResnet, Resnet=isResnet):
+    """
+    Create a bootstrapped dataset by sampling with replacement.
+    Parameters:
+        dataset (Dataset): The original dataset.
+        n_samples (int): The number of samples in the bootstrapped dataset.
+    Returns:
+        Dataset: A new dataset instance with bootstrapped data.
+    """
+    # Generate random indices with replacement
+    indices = torch.randint(0, len(dataset), size=(n_samples,))
+    # Subset from list of testing folders
+    bootstrapped_folders = testing_folders[indices]
+    
+    
+    return bootstrapped_data
+
+def test_model(model, test_loader, device):
+    
+    correct = 0
+    total = 0
+    
+    # Create a progress bar
+    progress_bar = tqdm(test_loader, desc='Testing', unit='batch')
+
+    with torch.no_grad():
+        true_labels = []
+        predictions = []
+        probabilities = []
+        case_ids = []
+        for inputs, labels, cases in progress_bar:
+            # move to device
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+            true_labels.extend(labels.tolist())
+            case_ids.extend(cases)
+
+            # Forward pass
+            outputs = model(inputs)
+            if isinstance(outputs, tuple):
+                outputs = outputs[0]
+            probs = torch.softmax(outputs, dim=1)
+            # Get predicted labels
+            _, predicted = torch.max(outputs.data, 1)
+
+            # Update variables
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+            probabilities.extend(probs.tolist())
+            predictions.extend(predicted.tolist())
+
+            # Update progress bar description
+            progress_bar.set_postfix({'Accuracy': '{:.2f}%'.format((correct / total) * 100)})
+    
+    # # Compute accuracy (testing for now) --delete
+    accuracy = 100 * correct / total
+    print('Test Accuracy: {:.2f}%'.format(accuracy))
+    # Close the progress bar
+    progress_bar.close()
+    
+    return case_ids, true_labels, probabilities, predictions
 
 def define_colours():
     M_darkpurple = '#783CBB'
