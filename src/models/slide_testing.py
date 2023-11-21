@@ -4,10 +4,11 @@ import torch
 import json
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from data.get_data import get_her2test_dataloader
 from collections import defaultdict
 from matplotlib.colors import LinearSegmentedColormap
-from models.inception_model import InceptionV3
+sys.path.append('/home/21576262@su/masters/')
+from src.data.get_data import get_her2test_dataloader
+from src.models.inception_model import InceptionV3
 
 
 def main():
@@ -21,7 +22,7 @@ def main():
     SEED=42
     num_cpus=8
     
-    # model_name = # FILL IN
+    model_name = 'inception'
     if model_name == 'inception': 
         INPUT_SIZE=299
     else: INPUT_SIZE=PATCH_SIZE
@@ -29,7 +30,7 @@ def main():
     Inception = True if model_name == 'inception' else False
     InceptionResnet = True if model_name == 'inceptionresnet' else False
     
-    # model_run_name = # FILL IN
+    model_run_name = 'magic-frost-148'
     
     print(f"Testing model: {model_run_name}")
     # Load model
@@ -43,6 +44,7 @@ def main():
     with open(json_path, 'r') as file:
         data = json.load(file)
     testing_folders = data['test']
+    print(f"Total testing folders (slides) = {len(testing_folders)}")
     test_dataloader = get_her2test_dataloader(testing_folders, batch_size, Inception=Inception, InceptionResnet=InceptionResnet) # testing subset for this model (make sure this is the HER2 loader!!)
     # Test model
     case_ids, true_labels, model_probabilities, model_predictions = test_model(model, test_dataloader, device)
@@ -57,9 +59,14 @@ def main():
     # save model results to json
     # ?
     
-    # patch-level testing
+    # patch-level testing (AUC)
+    # predicted_probs = [model_probabilities[i][1] for i in range(len(model_probabilities))]
+    # auc_score = roc_auc_score(true_labels, predicted_probs)
     
-    # slide-level testing
+    # slide-level testing (AUC)
+    case_dict = test_slide_level(model_results)
+    print(f"Length of slide scores: {len(case_dict)}")
+    # auc_score = roc_auc_score(case_dict, case_dict)
 
     
 
@@ -94,17 +101,18 @@ def test_slide_level(model_results):
         case_dict[case]['true_class'] = set(true_labels)
         
         # Aggregate results
+        # --------------------
+        # using average probability
+        case_dict[case]["slide_avg_prob"] = np.mean(case_dict[case]['probs'])
         
-        # average probability
-        avg_prob = np.mean(case_dict[case]['probs'])
-        case_dict[case]["slide_avg_prob"] = avg_prob
-        # % positively classified tiles
-        num_correct_tiles = np.sum([case_dict[case]['true_classes'][i] == case_dict[case]['pred_classes'][i] for i in range(len(case_dict[case]['true_classes']))])
+        # using % positively classified tiles
+        # num_correct_tiles = np.sum([case_dict[case]['true_classes'][i] == case_dict[case]['pred_classes'][i] for i in range(len(case_dict[case]['true_classes']))])
+        num_tiles_classified_pos = np.sum([case_dict[case]['pred_classes'][i] == 1 for i in range(len(case_dict[case]['true_classes']))])
         total_slide_tiles = len(case_dict[case]['true_classes'])
-        percentage_corr_classified = num_correct_tiles/total_slide_tiles
-        case_dict[case]["%_classified_correctly"] = percentage_corr_classified
+        percentage_pos_classified = num_tiles_classified_pos/total_slide_tiles
+        case_dict[case]["%_classified_as_positive"] = percentage_corr_classified
     
-    # return case_dict
+    return case_dict
         
 
 def test_model(model, test_loader, device):
