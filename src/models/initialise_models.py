@@ -11,8 +11,8 @@ from torch.optim.lr_scheduler import _LRScheduler
 
 def INCEPTIONv4(num_classes):
     
-    initial_learning_rate=0.045
-    learning_rate_decay=0.94
+    # initial_learning_rate=0.045
+    # learning_rate_decay=0.94
     weight_decay=4e-05
     
     rms_decay=0.9
@@ -22,8 +22,8 @@ def INCEPTIONv4(num_classes):
     # initial_learning_rate=0.1
     # learning_rate_decay=0.16
     # Gamble
-    # initial_learning_rate=0.0055
-    # learning_rate_decay=0.9
+    initial_learning_rate=0.0055
+    learning_rate_decay=0.9
     # initial_learning_rate=0.0055
     # learning_rate_decay=0.16
 
@@ -70,17 +70,28 @@ def INCEPTIONv4(num_classes):
 
 def INCEPTIONRESNETv2(num_classes):
     
-    initial_learning_rate=0.045
-    learning_rate_decay=0.94
+    # initial_learning_rate=0.045
+    # learning_rate_decay=0.94
     weight_decay=4e-05
     
     rms_decay=0.9
     epsilon=1.0
     
+    # Coudray
+    # initial_learning_rate=0.1
+    # learning_rate_decay=0.16
+    # Gamble
+    initial_learning_rate=0.0055
+    learning_rate_decay=0.9
+    # initial_learning_rate=0.0055
+    # learning_rate_decay=0.16
+
+    initial_learning_rate=0.0003
+
     momentum=0.9
     
     parameters = {"learning_rate": initial_learning_rate,
-                  "learning_rate_decay": learning_rate_decay,
+                  # "learning_rate_decay": learning_rate_decay,
                   "momentum": momentum, 
                   "epsilon": epsilon, 
                   "RMS_decay/alpha": rms_decay,
@@ -105,10 +116,10 @@ def INCEPTIONRESNETv2(num_classes):
                               momentum=momentum,
                               eps=epsilon, 
                               weight_decay=weight_decay)
-    scheduler = optim.lr_scheduler.StepLR(optimiser, step_size=2, gamma=learning_rate_decay)
+    # scheduler = optim.lr_scheduler.StepLR(optimiser, step_size=2, gamma=learning_rate_decay)
     criterion = nn.CrossEntropyLoss()
     
-    return model, optimiser, criterion, parameters, scheduler
+    return model, optimiser, criterion, parameters, None
 
 # HEROHE: Macaroon
 def RESNET34(num_classes):

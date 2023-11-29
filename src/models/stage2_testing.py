@@ -30,7 +30,9 @@ def main():
     SEED=42
     num_cpus=8
     
-    model_names = {'occult-newt-137': 'RESNET34', 'fresh-firefly-138': 'RESNET18', 'morning-glitter-146': 'RESNET50', 'glamorous-firefly-147': 'INCEPTIONv3', 'magic-frost-148': 'INCEPTIONv4', 'gallant-sea-150' : 'INCEPTIONRESNETv2'}
+    # model_names = {'occult-newt-137': 'RESNET34', 'fresh-firefly-138': 'RESNET18', 'morning-glitter-146': 'RESNET50', 'glamorous-firefly-147': 'INCEPTIONv3', 'magic-frost-148': 'INCEPTIONv4', 'gallant-sea-150' : 'INCEPTIONRESNETv2'}
+    model_names = {'snowy-elevator-155': 'INCEPTIONv4', 'skilled-river-154' : 'INCEPTIONRESNETv2'}
+    
     results = []
     # Test each model
     for name in model_names.keys():

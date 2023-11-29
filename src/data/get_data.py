@@ -128,7 +128,7 @@ class HER2Dataset(Dataset):
 
         self.imgs = [] # Keeps image paths to load in the __getitem__ method
         self.status = []
-        self.img_cases=[] # Image case for each patch
+        self.img_cases=[] # Image case corresponding for each patch
         self.cases = [] # Keep track of cases used in this set
         
         df_her2_status = get_her2_status_list()
@@ -141,12 +141,13 @@ class HER2Dataset(Dataset):
             for i, img in enumerate(os.listdir(img_folder)):
                 if os.path.isfile(os.path.join(img_folder, img)) and os.path.isfile(label_file):
                     case_id = img_folder.split('/')[-1]
-                    self.img_cases.append(case_id)
+                    # self.img_cases.append(case_id)
                     if img.startswith('._'):
                         img = img.replace('._', '')
                     idx = int(img.replace('.png', '').split("_")[1])
                     if labels_pt[idx].item() == 1:
                         self.imgs.append(os.path.join(img_folder, img))
+                        self.img_cases.append(case_id)
                         self.status.append(df_her2_status[case_id]) # get label as int
         
     def __len__(self):
