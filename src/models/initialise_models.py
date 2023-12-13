@@ -13,36 +13,26 @@ def INCEPTIONv4(num_classes):
     
     # initial_learning_rate=0.045
     # learning_rate_decay=0.94
-    weight_decay=4e-05
     
-    rms_decay=0.9
-    epsilon=1.0
+    weight_decay=0.00004
     
-    # Coudray
-    # initial_learning_rate=0.1
-    # learning_rate_decay=0.16
-    # Gamble
+    # rms_decay=0.9
+    # epsilon=1.0
+
+    # initial_learning_rate=0.01
+    # learning_rate_decay=0.1
+    
     initial_learning_rate=0.0055
     learning_rate_decay=0.9
-    # initial_learning_rate=0.0055
-    # learning_rate_decay=0.16
 
-    momentum=0.9
+    # momentum=0.9
     
     parameters = {"learning_rate": initial_learning_rate,
                   "learning_rate_decay": learning_rate_decay,
-                  "momentum": momentum, 
-                  "epsilon": epsilon, 
-                  "RMS_decay/alpha": rms_decay,
+                  # "momentum": momentum, 
+                  # "epsilon": epsilon, 
+                  # "RMS_decay/alpha": rms_decay,
                   "weight_decay/L2": weight_decay}
-        
-#     # Freeze all the parameters
-#     for param in model.parameters():
-#         param.requires_grad = False
-
-#     # Set the last n layers to trainable
-#     for param in list(model.parameters())[-15:]:
-#         param.requires_grad = True
         
     # parameters = {"learning_rate": initial_learning_rate,
     #               "learning_rate_decay": learning_rate_decay, 
@@ -53,16 +43,30 @@ def INCEPTIONv4(num_classes):
     model = timm.create_model('inception_v4', pretrained=False, num_classes=num_classes) 
     model.classif = nn.Sequential(
         nn.ReLU(inplace=True),
-        nn.Dropout(p=0.7),
+        nn.Dropout(p=0.8),
         nn.Linear(model.get_classifier().in_features, num_classes)
     )
     
-    optimiser = optim.RMSprop(model.parameters(), 
-                              lr=initial_learning_rate,
-                              alpha=rms_decay,
-                              momentum=momentum,
-                              eps=epsilon, 
-                              weight_decay=weight_decay)
+#     # Freeze all the parameters
+#     for param in model.parameters():
+#         param.requires_grad = False
+
+#     # Set the last n layers to trainable
+#     for param in list(model.parameters())[-10:]:
+#         param.requires_grad = True
+    
+    # optimiser = optim.RMSprop(model.parameters(), 
+    #                           lr=initial_learning_rate,
+    #                           alpha=rms_decay,
+    #                           momentum=momentum,
+    #                           eps=epsilon, 
+    #                           weight_decay=weight_decay)
+    # optimiser = torch.optim.SGD(model.parameters(), lr=initial_learning_rate, momentum=momentum, weight_decay=weight_decay)
+    
+    optimiser = optim.Adam(model.parameters(),
+                           lr=initial_learning_rate,
+                           weight_decay=weight_decay
+                          )
     scheduler = optim.lr_scheduler.StepLR(optimiser, step_size=2, gamma=learning_rate_decay)
     criterion = nn.CrossEntropyLoss()
     
@@ -72,29 +76,22 @@ def INCEPTIONRESNETv2(num_classes):
     
     # initial_learning_rate=0.045
     # learning_rate_decay=0.94
-    weight_decay=4e-05
     
-    rms_decay=0.9
-    epsilon=1.0
-    
-    # Coudray
-    # initial_learning_rate=0.1
-    # learning_rate_decay=0.16
-    # Gamble
+    weight_decay=0.00004
+
+    # rms_decay=0.9
+    # epsilon=1.0
+
     initial_learning_rate=0.0055
     learning_rate_decay=0.9
-    # initial_learning_rate=0.0055
-    # learning_rate_decay=0.16
 
-    initial_learning_rate=0.0003
-
-    momentum=0.9
+    # momentum=0.9
     
     parameters = {"learning_rate": initial_learning_rate,
-                  # "learning_rate_decay": learning_rate_decay,
-                  "momentum": momentum, 
-                  "epsilon": epsilon, 
-                  "RMS_decay/alpha": rms_decay,
+                  "learning_rate_decay": learning_rate_decay,
+                  # "momentum": momentum, 
+                  # "epsilon": epsilon, 
+                  # "RMS_decay/alpha": rms_decay,
                   "weight_decay/L2": weight_decay}
         
     # parameters = {"learning_rate": initial_learning_rate,
@@ -106,20 +103,35 @@ def INCEPTIONRESNETv2(num_classes):
     model = timm.create_model('inception_resnet_v2', pretrained=False, num_classes=num_classes)
     model.classif = nn.Sequential(
         nn.ReLU(inplace=True),
-        nn.Dropout(p=0.7),
+        nn.Dropout(p=0.8),
         nn.Linear(model.get_classifier().in_features, num_classes)
     )
+    # ckpt = torch.load('masters/models/lunar-hill-102_model_weights.pth')
+    # model.load_state_dict(ckpt)
     
-    optimiser = optim.RMSprop(model.parameters(), 
-                              lr=initial_learning_rate,
-                              alpha=rms_decay,
-                              momentum=momentum,
-                              eps=epsilon, 
-                              weight_decay=weight_decay)
-    # scheduler = optim.lr_scheduler.StepLR(optimiser, step_size=2, gamma=learning_rate_decay)
+#     # Freeze all the parameters
+#     for param in model.parameters():
+#         param.requires_grad = False
+    
+#     # Set the last 10 layers to trainable
+#     for param in list(model.parameters())[-40:]:
+#         param.requires_grad = True
+    
+    # optimiser = optim.RMSprop(model.parameters(), 
+    #                           lr=initial_learning_rate,
+    #                           alpha=rms_decay,
+    #                           momentum=momentum,
+    #                           eps=epsilon, 
+    #                           weight_decay=weight_decay)
+    # optimiser = torch.optim.SGD(model.parameters(), lr=initial_learning_rate, momentum=momentum, weight_decay=weight_decay)
+    optimiser = optim.Adam(model.parameters(),
+                           lr=initial_learning_rate,
+                           weight_decay=weight_decay
+                          )
+    scheduler = optim.lr_scheduler.StepLR(optimiser, step_size=2, gamma=learning_rate_decay)
     criterion = nn.CrossEntropyLoss()
     
-    return model, optimiser, criterion, parameters, None
+    return model, optimiser, criterion, parameters, scheduler
 
 # HEROHE: Macaroon
 def RESNET34(num_classes):
@@ -150,7 +162,7 @@ def RESNET18(num_classes):
 
     model = models.resnet18(weights='DEFAULT')
         
-     # Freeze all the parameters
+    # Freeze all the parameters
     for param in model.parameters():
         param.requires_grad = False
         

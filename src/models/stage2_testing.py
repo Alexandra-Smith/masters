@@ -13,7 +13,7 @@ import pandas as pd
 from sklearn import metrics
 import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap
-from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, ConfusionMatrixDisplay, precision_recall_curve, average_precision_score
 sys.path.append('/home/21576262@su/masters/')
 from src.data.get_data import get_her2test_dataloader
 from src.models.inception_model import InceptionV3
@@ -31,7 +31,7 @@ def main():
     num_cpus=8
     
     # model_names = {'occult-newt-137': 'RESNET34', 'fresh-firefly-138': 'RESNET18', 'morning-glitter-146': 'RESNET50', 'glamorous-firefly-147': 'INCEPTIONv3', 'magic-frost-148': 'INCEPTIONv4', 'gallant-sea-150' : 'INCEPTIONRESNETv2'}
-    model_names = {'snowy-elevator-155': 'INCEPTIONv4', 'skilled-river-154' : 'INCEPTIONRESNETv2'}
+    model_names = {'spring-pyramid-177': 'RESNET34'}
     
     results = []
     # Test each model
@@ -75,11 +75,15 @@ def main():
         # Visualisation
         roc_plot(true_labels, model_probabilities, name, cd)
         plot_confusion_matrix(true_labels, model_predictions, name, custom_grn)
+        
+        pr_curve(true_labels, model_probabilities, name, cd)
 
     # Convert the list of dictionaries to a pandas DataFrame
     df = pd.DataFrame(results)
     # Save to JSON
-    df.to_json('masters/reports/results/stage2_all_results.json', orient='records')
+    # df.to_json('masters/reports/results/stage2_all_results.json', orient='records')
+    
+    
 
 def test_model(model, test_loader, device):
     
@@ -167,46 +171,76 @@ def load_trained_models(num_classes, model_path, model_architecture):
     return model  
     
 def roc_plot(y_test, model_probabilities, model_name, colours):
-    # keep probabilities for the positive outcome only
-    predicted_probs = [model_probabilities[i][1] for i in range(len(model_probabilities))]
-    # calculate scores
-    auc_score = roc_auc_score(y_test, predicted_probs)
-    # summarize scores
-    print('ROC AUC=%.3f' % (auc_score))
-    # calculate roc curves
-    fpr, tpr, _ = roc_curve(y_test, predicted_probs)
-    # generate a no skill prediction (majority class)
-    ns_probs = [0 for _ in range(len(y_test))]
-    ns_fpr, ns_tpr, _ = roc_curve(y_test, ns_probs)
+    
+    if not os.path.isfile("/home/21576262@su/masters/reports/results/" + model_name + '/roc.png'):
+        # keep probabilities for the positive outcome only
+        predicted_probs = [model_probabilities[i][1] for i in range(len(model_probabilities))]
+        # calculate scores
+        auc_score = roc_auc_score(y_test, predicted_probs)
+        # summarize scores
+        print('ROC AUC=%.3f' % (auc_score))
+        # calculate roc curves
+        fpr, tpr, _ = roc_curve(y_test, predicted_probs)
+        # generate a no skill prediction (majority class)
+        ns_probs = [0 for _ in range(len(y_test))]
+        ns_fpr, ns_tpr, _ = roc_curve(y_test, ns_probs)
 
-    # plot the roc curve for the model
-    plt.plot(ns_fpr, ns_tpr, colours['green'], linestyle='--', label='No Skill')
-    plt.plot(fpr, tpr, colours['lightpurple'], marker='.', label='Model')
-    # axis labels
-    plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
-    plt.legend()
-    plt.title('AUC=%.3f' % (auc_score))
-    # plt.show()
-    plt.savefig("/home/21576262@su/masters/reports/results/" + model_name + '/roc.png')
-    plt.clf()
+        # plot the roc curve for the model
+        plt.plot(ns_fpr, ns_tpr, colours['green'], linestyle='--', label='No Skill')
+        plt.plot(fpr, tpr, colours['lightpurple'], marker='.', label='Model')
+        # axis labels
+        plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
+        plt.legend()
+        plt.title('AUC=%.3f' % (auc_score))
+        # plt.show()
+        plt.savefig("/home/21576262@su/masters/reports/results/" + model_name + '/roc.png')
+        plt.clf()
     
 def plot_confusion_matrix(y_test, predictions, model_name, colourmap):
-    cm = confusion_matrix(y_test, predictions)
-    group_counts = ['{0:0.0f}'.format(value) for value in cm.flatten()]
-    group_percentages = ['{0:.2%}'.format(value) for value in cm.flatten()/np.sum(cm)]
-    labels = [f"{v1}\n({v2})" for v1, v2 in zip(group_counts,group_percentages)]
-    labels = np.asarray(labels).reshape(2,2)
-    sns.heatmap(cm, annot=labels, fmt='', cmap=colourmap)
-    plt.title('Confusion Matrix');
-    plt.xlabel('Predicted Label')
-    plt.ylabel('True Label')
-    # disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-    # disp.plot(cmap='plasma', values_format='.0f')
-    # disp.plot(cmap='PuBuGn', values_format='.2%')
-    # plt.show()
-    fig_name = 'cm.png'
-    plt.savefig("/home/21576262@su/masters/reports/results/" + model_name + '/' + fig_name)
-    plt.clf()
+    
+    if not os.path.isfile("/home/21576262@su/masters/reports/results/" + model_name + '/cm.png'):
+        cm = confusion_matrix(y_test, predictions)
+        group_counts = ['{0:0.0f}'.format(value) for value in cm.flatten()]
+        group_percentages = ['{0:.2%}'.format(value) for value in cm.flatten()/np.sum(cm)]
+        labels = [f"{v1}\n({v2})" for v1, v2 in zip(group_counts,group_percentages)]
+        labels = np.asarray(labels).reshape(2,2)
+        sns.heatmap(cm, annot=labels, fmt='', cmap=colourmap)
+        plt.title('Confusion Matrix');
+        plt.xlabel('Predicted Label')
+        plt.ylabel('True Label')
+        # disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+        # disp.plot(cmap='plasma', values_format='.0f')
+        # disp.plot(cmap='PuBuGn', values_format='.2%')
+        # plt.show()
+        plt.savefig("/home/21576262@su/masters/reports/results/" + model_name + '/cm.png')
+        plt.clf()
+    
+def pr_curve(y_test, model_probabilities, model_name, colours):
+    
+    if not os.path.isfile("/home/21576262@su/masters/reports/results/" + model_name + '/pr_curve.png'):
+        predicted_probs = [model_probabilities[i][1] for i in range(len(model_probabilities))]
+        precision, recall, thresholds = precision_recall_curve(y_test, predicted_probs)
+        pr_auc = average_precision_score(y_test, predicted_probs)
+        
+        positive_recall_indices = recall > 0
+        recall = recall[positive_recall_indices]
+        precision = precision[positive_recall_indices]
+
+        fig, ax = plt.subplots()
+        ax.plot(recall, precision, color=colours['purple'], label="Model, PR AUC=%.3f" % (pr_auc))
+        #add axis labels to plot
+        ax.set_title('Precision-Recall Curve')
+        ax.set_ylabel('Precision')
+        ax.set_xlabel('Recall')
+
+        # Calculate the no-skill precision
+        no_skill_precision = np.sum(y_test) / len(y_test)
+        # Add the baseline (no-skill line) to the plot
+        ax.axhline(y=no_skill_precision, color=colours['green'], linestyle='--', label='Baseline')
+        ax.legend()
+        # plt.show()
+        plt.savefig("/home/21576262@su/masters/reports/results/" + model_name + '/pr_curve.png')
+        plt.clf()
 
 def define_colours():
     M_darkpurple = '#783CBB'

@@ -283,17 +283,17 @@ def define_transforms(PATCH_SIZE, isResNet=False, isInception=False, isInception
                 transforms.RandomVerticalFlip(),
                 RandomSpecificRotation(),
                 transforms.ColorJitter(brightness=0.25, contrast=[0.5, 1.75], saturation=[0.75, 1.25], hue=0.04),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) #inception
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) #inception
             ]),
             'val': transforms.Compose([
                 transforms.Resize(INPUT_SIZE),
                 transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # inception
             ]),
             'test' : transforms.Compose([
                 transforms.Resize(INPUT_SIZE),
                 transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # inception
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # inception
             ])
         }
     elif isInceptionResnet:
@@ -396,10 +396,9 @@ def split_her2(SEED):
     
     return train_cases, val_cases, test_cases
 
-def her2_dataloaders(batch_size, SEED, train_cases, val_cases, test_cases, Inception=False, InceptionResnet=False):
+def her2_dataloaders(batch_size, train_cases, val_cases, test_cases, Inception=False, InceptionResnet=False):
     
     PATCH_SIZE=256
-    STRIDE=PATCH_SIZE
     num_cpus=8
     
     img_dir = '/home/21576262@su/masters/data/patches/'
@@ -429,7 +428,7 @@ def her2_dataloaders(batch_size, SEED, train_cases, val_cases, test_cases, Incep
     
     # Compute class weights for balancing training dataset
     class_weights = 1. / torch.tensor(class_counts, dtype=torch.float)
-    weights = [class_weights[i] for i in labels]  # dataset_targets are your labels
+    weights = [class_weights[i] for i in labels]
     weighted_sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
     
     # Create training, validation and test dataloaders
@@ -438,6 +437,11 @@ def her2_dataloaders(batch_size, SEED, train_cases, val_cases, test_cases, Incep
         'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=num_cpus, shuffle=True),
         'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=False)
     }
+    # dataloaders = {
+    #     'train': data_utils.DataLoader(image_datasets['train'], batch_size=batch_size, num_workers=num_cpus, shuffle=True, drop_last=True),
+    #     'val': data_utils.DataLoader(image_datasets['val'], batch_size=batch_size, num_workers=num_cpus, shuffle=False),
+    #     'test': data_utils.DataLoader(image_datasets['test'], batch_size=batch_size, num_workers=num_cpus, shuffle=False)
+    # }
     
     print(f"Total tumour patches: {len(dataloaders['train'])*batch_size + len(dataloaders['val'])*batch_size + len(dataloaders['test'])*batch_size} \nNumber of training patches: {len(dataloaders['train'])*batch_size} \nNumber of validation patches {len(dataloaders['val'])*batch_size} \nNumber of test patches {len(dataloaders['test'])*batch_size}")
     
@@ -508,7 +512,7 @@ def get_her2test_dataloader(subfolders, batch_size, Inception=False, InceptionRe
     labels_dir = '/home/21576262@su/masters/data/labels/' 
     test_img_folders = [main_dir + case for case in subfolders]
     test_labels = [labels_dir + case + '.pt' for case in subfolders]
-    
+ 
     data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
 
     test_dataset = HER2Dataset(test_img_folders, test_labels, transform=data_transforms['test'])

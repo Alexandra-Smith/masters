@@ -6,13 +6,17 @@ import timm
 import numpy as np
 import pandas as pd
 import torch.nn as nn
+from torchvision import models
 from tqdm import tqdm
+import seaborn as sns
 import matplotlib.pyplot as plt
 from collections import defaultdict
+from sklearn import metrics
 from matplotlib.colors import LinearSegmentedColormap
 sys.path.append('/home/21576262@su/masters/')
-from src.data.get_data import get_her2test_dataloader
+from src.data.get_data import get_her2test_dataloader, get_her2_status_list
 from src.models.inception_model import InceptionV3
+from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, ConfusionMatrixDisplay, precision_recall_curve, average_precision_score
 # from src.models import initialise_models
 
 
@@ -27,7 +31,7 @@ def main():
     SEED=42
     num_cpus=8
     
-    model_name = 'inception'
+    model_name = 'inceptionresnet'
     if model_name == 'inception': 
         INPUT_SIZE=299
     else: INPUT_SIZE=PATCH_SIZE
@@ -35,71 +39,188 @@ def main():
     Inception = True if model_name == 'inception' else False
     InceptionResnet = True if model_name == 'inceptionresnet' else False
     
-    model_run_name = 'magic-frost-148'
+    model_names = {'spring-pyramid-177': 'RESNET34'}
     
-    print(f"Testing model: {model_run_name}")
-    # Load model
-    model_path = os.path.join('masters/models/', model_run_name + '_model_weights.pth')
-    model = load_trained_model(num_classes, model_path)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = model.to(device) # send model to GPU
-    
-    # Get info on model data split
-    json_path = os.path.join('masters/models/data_splits/', model_run_name + '.json')
-    with open(json_path, 'r') as file:
-        data = json.load(file)
-    testing_folders = data['test']
-    print(f"Total testing folders (slides) = {len(testing_folders)}")
-    test_dataloader = get_her2test_dataloader(testing_folders, batch_size, Inception=Inception, InceptionResnet=InceptionResnet) # testing subset for this model (make sure this is the HER2 loader!!)
-    
-    true_labels = []
-    case_ids = []
-    for inputs, labels, cases in test_dataloader:
-        true_labels.extend(labels.tolist())
-        case_ids.extend(cases)
+    # results = []
+    # Test each model
+    for name in model_names.keys():
+        print(f"Testing model: {name}")
+        print(model_names[name])
+        # Load model
+        model_path = os.path.join('masters/models/', name + '_model_weights.pth')
+        model = load_trained_models(num_classes, model_path, model_names[name])
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model = model.to(device) # send model to GPU
+        
+        isInceptionResnet = True if model_names[name]=='INCEPTIONRESNETv2' else False
+        isInception = True if (model_names[name]=='INCEPTIONv3' or model_names[name]=='INCEPTIONv4') else False
 
-    
-    df = pd.DataFrame({
-        'case': case_ids,
-        'label': true_labels
-    })
-    df.to_csv('/home/21576262@su/masters/test_data.csv', index=False)
-    
-    
-    # Test model
-#     case_ids, true_labels, model_probabilities, model_predictions = test_model(model, test_dataloader, device)
-#     # Save model results
-#     model_results = {
-#         'model_name': model_run_name,
-#         'case_ids': case_ids,
-#         'true_labels': true_labels,
-#         'predicted_probs': model_probabilities,
-#         'predicted_classes': model_predictions
-#     }
-#     # save model results to json
-#     # ?
-    
-#     # patch-level testing (AUC)
-#     # predicted_probs = [model_probabilities[i][1] for i in range(len(model_probabilities))]
-#     # auc_score = roc_auc_score(true_labels, predicted_probs)
-    
-#     # slide-level testing (AUC)
-#     case_dict = test_slide_level(model_results)
-#     print(f"Length of slide scores: {len(case_dict)}")
-#     # auc_score = roc_auc_score(case_dict, case_dict)
+        # Get info on model data split
+        json_path = os.path.join('masters/models/data_splits/', name + '.json')
+        with open(json_path, 'r') as file:
+            data = json.load(file)
+        testing_folders = data['test']
+        print(f"Total testing folders (slides) = {len(testing_folders)}")
+        test_dataloader = get_her2test_dataloader(testing_folders, batch_size, Inception=Inception, InceptionResnet=InceptionResnet) # testing subset for this model (make sure this is the HER2 loader!!)
 
+    #     true_labels = []
+    #     case_ids = []
+    #     for inputs, labels, cases in test_dataloader:
+    #         true_labels.extend(labels.tolist())
+    #         case_ids.extend(cases)
+
+
+    #     df = pd.DataFrame({
+    #         'case': case_ids,
+    #         'label': true_labels
+    #     })
+    #     df.to_csv('/home/21576262@su/masters/test_data.csv', index=False)
+
+        # Test model
+        case_ids, true_labels, model_probabilities, model_predictions = test_model(model, test_dataloader, device)
+        # Save model results
+        model_results = {
+            'model_name': name,
+            'case_ids': case_ids,
+            'true_labels': true_labels,
+            'predicted_probs': model_probabilities,
+            'predicted_classes': model_predictions
+        }
+        # save model results to json
+        # ?
+        # with open('/home/21576262@su/masters/results.json', 'w') as file:
+        #         json.dump(model_results, file)
+
+        # patch-level testing (AUC)
+        # predicted_probs = [model_probabilities[i][1] for i in range(len(model_probabilities))]
+        # auc_score = roc_auc_score(true_labels, predicted_probs)
+
+        # slide-level testing (AUC)
+        case_dict = test_slide_level(model_results)
+        # print(f"Length of slide scores: {len(case_dict)}")
+
+        true_labels = [case_dict[case]['true_class'] for case in case_dict]
+        avg_probs = [case_dict[case]['slide_avg_prob'] for case in case_dict]
+        positively_clasif = [case_dict[case]['%_classified_as_positive'] for case in case_dict]
+        predictions = [round(case_dict[case]['slide_avg_prob']) for case in case_dict]
+
+        # print(true_labels)
+        # print(len(true_labels))
+        # print(true_labels)
+        # print(predictions)
+        # print(avg_probs)
+        # print(positively_clasif)
+        # s = []
+        # for p in positively_clasif:
+        #     if p>0.5:
+        #         s.append(1)
+        #     else:
+        #         s.append(0)
+        # print(s)
+
+
+        auc_score1 = roc_auc_score(true_labels, avg_probs)
+        auc_score2 = roc_auc_score(true_labels, positively_clasif)
+
+        print(auc_score1)
+        print(auc_score2)
+
+        # calculate roc curves
+        fpr1, tpr1, _ = roc_curve(true_labels, avg_probs)
+        fpr2, tpr2, _ = roc_curve(true_labels, positively_clasif)
+        # generate a no skill prediction (majority class)
+        ns_probs = [0 for _ in range(len(true_labels))]
+        ns_fpr, ns_tpr, _ = roc_curve(true_labels, ns_probs)
+        # plot the roc curve for the model
+        plt.plot(ns_fpr, ns_tpr, cd['green'], linestyle='--', label='No Skill')
+        plt.plot(fpr1, tpr1, cd['purple'], marker='.', label=f"Average predicted probability: {'{:.2f}'.format(auc_score1)}")
+        plt.plot(fpr2, tpr2, cd['yellow'], marker='.', label=f"Percentage postively classified: {'{:.2f}'.format(auc_score2)}")
+        # axis labels
+        plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
+        plt.legend()
+        # plt.title('AUC=%.3f' % (auc_score))
+        # plt.show()
+        plt.savefig("/home/21576262@su/masters/reports/results/" + name + '/roc_slide_level.png')
+        plt.clf()
+
+        cm = confusion_matrix(true_labels, predictions)
+        group_counts = ['{0:0.0f}'.format(value) for value in cm.flatten()]
+        group_percentages = ['{0:.2%}'.format(value) for value in cm.flatten()/np.sum(cm)]
+        labels = [f"{v1}\n({v2})" for v1, v2 in zip(group_counts,group_percentages)]
+        labels = np.asarray(labels).reshape(2,2)
+        sns.heatmap(cm, annot=labels, fmt='', cmap=custom_grn)
+        # plt.title('Confusion Matrix');
+        plt.xlabel('Predicted Label')
+        plt.ylabel('True Label')
+        # disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+        # disp.plot(cmap='plasma', values_format='.0f')
+        # disp.plot(cmap='PuBuGn', values_format='.2%')
+        # plt.show()
+        plt.savefig("/home/21576262@su/masters/reports/results/" + name + '/cm_slide_level.png')
+        plt.clf()
+
+        report = metrics.classification_report(true_labels, predictions)
+        print(report)
+
+def load_trained_models(num_classes, model_path, model_architecture):
     
+    model_names = ['RESNET34', 'RESNET18', 'RESNET50', 'INCEPTIONv3', 'INCEPTIONv4', 'INCEPTIONRESNETv2']
+    
+    if model_architecture == 'RESNET34':
+        model = models.resnet34()
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, num_classes)
+    elif model_architecture == 'RESNET18':
+        model = models.resnet18()
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, num_classes)
+    elif model_architecture == 'RESNET50':
+        model = models.resnet50()  
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, num_classes)
+    elif model_architecture == 'INCEPTIONv3':
+        model = InceptionV3(num_classes=num_classes)
+    elif model_architecture == 'INCEPTIONv4':
+        model = timm.create_model('inception_v4', pretrained=False, num_classes=num_classes) 
+        model.classif = nn.Sequential(
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.7),
+            nn.Linear(model.get_classifier().in_features, num_classes)
+        )
+    elif model_architecture == 'INCEPTIONRESNETv2':
+        model = timm.create_model('inception_resnet_v2', pretrained=False, num_classes=num_classes)
+        model.classif = nn.Sequential(
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.7),
+            nn.Linear(model.get_classifier().in_features, num_classes)
+        )
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
+
+    return model 
 
 def test_slide_level(model_results):
     case_ids = model_results['case_ids']
     predicted_probs = model_results['predicted_probs']
     predicted_classes = model_results['predicted_classes']
     true_labels = model_results['true_labels']
+    
+    # print(set(case_ids))
+    l = []
+    for item in case_ids:
+        if item not in l:
+            l.append(item)
+    print(l)
+    
+    dicc = get_her2_status_list()
+    # print(dicc)
+    L = [dicc[case] for case in l]
+    print(L)
  
     case_dict = defaultdict(lambda: {'probs': [], 'pred_classes': [], 'true_classes': []}) # default dictionary created
 
     for case, prob, pred_class, true_label in zip(case_ids, predicted_probs, predicted_classes, true_labels):
-        case_dict[case]['probs'].append(prob)
+        case_dict[case]['probs'].append(prob[1])
         case_dict[case]['pred_classes'].append(pred_class)
         case_dict[case]['true_classes'].append(true_label)
 
@@ -113,26 +234,26 @@ def test_slide_level(model_results):
             print(len(set(true_labels)))
             print(true_labels)
             raise ValueError(f"Tiles from case {case} are not all the same HER2 status ")
-        else:
-            print(f"All tile share same status for case {case}")
+        # else:
+        #     print(f"All tile share same status for case {case}")
         
         # check corresponds with given HER2 status
         # get dataframe with statuses
         # ?
         # first check then add to dict if corresponds else error
-        case_dict[case]['true_class'] = set(true_labels)
+        case_dict[case]['true_class'] = set(true_labels).pop()
         
         # Aggregate results
         # --------------------
         # using average probability
-        case_dict[case]["slide_avg_prob"] = np.mean(case_dict[case]['probs'])
+        case_dict[case]['slide_avg_prob'] = np.mean(case_dict[case]['probs'])
         
         # using % positively classified tiles
         # num_correct_tiles = np.sum([case_dict[case]['true_classes'][i] == case_dict[case]['pred_classes'][i] for i in range(len(case_dict[case]['true_classes']))])
         num_tiles_classified_pos = np.sum([case_dict[case]['pred_classes'][i] == 1 for i in range(len(case_dict[case]['true_classes']))])
         total_slide_tiles = len(case_dict[case]['true_classes'])
         percentage_pos_classified = num_tiles_classified_pos/total_slide_tiles
-        case_dict[case]["%_classified_as_positive"] = percentage_pos_classified
+        case_dict[case]['%_classified_as_positive'] = percentage_pos_classified
     
     return case_dict
         
@@ -186,13 +307,17 @@ def test_model(model, test_loader, device):
 def load_trained_model(num_classes, model_path): 
     
     # model = InceptionV3(num_classes=num_classes)
-    # model = initialise_models.INCEPTIONv4(num_classes=num_classes)
-    model = timm.create_model('inception_v4', pretrained=False, num_classes=num_classes) 
+    model = timm.create_model('inception_resnet_v2', pretrained=False, num_classes=num_classes) 
     model.classif = nn.Sequential(
         nn.ReLU(inplace=True),
         nn.Dropout(p=0.7),
         nn.Linear(model.get_classifier().in_features, num_classes)
     )
+    
+    # model = models.resnet34()
+    # # Modify the last layer for binary classification (output 2 classes)    
+    # num_ftrs = model.fc.in_features
+    # model.fc = nn.Linear(num_ftrs, num_classes)
     
     # Load the saved model state dict
     model.load_state_dict(torch.load(model_path))
