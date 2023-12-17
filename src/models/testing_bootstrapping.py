@@ -1,6 +1,10 @@
+import os
+import sys
+import json
 import torch
+import torch.nn as nn
 import torchvision
-from .inception_model import InceptionV3
+import torch.utils.data as data_utils
 import timm
 from torchvision import models
 import numpy as np
@@ -9,6 +13,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from sklearn.metrics import roc_auc_score
 sys.path.append('/home/21576262@su/masters/')
 from src.data.get_data import get_her2test_dataset
+from src.models.inception_model import InceptionV3
 
 def main():
     ##### SET PARAMETERS #####
@@ -23,6 +28,8 @@ def main():
     num_cpus=8
     
     # model_names = {'occult-newt-137': 'RESNET34', 'fresh-firefly-138': 'RESNET18', 'morning-glitter-146': 'RESNET50', 'glamorous-firefly-147': 'INCEPTIONv3', 'magic-frost-148': 'INCEPTIONv4', '??' : 'INCEPTIONRESNETv2'}
+    model_names = {'spring-pyramid-177': 'RESNET34'}
+   # {'trim-valley-173': 'INCEPTIONv4', 'drawn-serenity-176': 'INCEPTIONv3', 'dazzling-sea-175' : 'INCEPTIONRESNETv2'}
 
     # Test each model
     for name in model_names.keys():
@@ -36,37 +43,44 @@ def main():
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = model.to(device) # send model to GPU
         
-        InceptionResnet = True if model_names[model_name]=='INCEPTIONRESNETv2' else False
-        Inception = True if (model_names[model_name]=='INCEPTIONv3' or model_names[model_name]=='INCEPTIONv4') else False
+        InceptionResnet = True if model_names[name]=='INCEPTIONRESNETv2' else False
+        Inception = True if (model_names[name]=='INCEPTIONv3' or model_names[name]=='INCEPTIONv4') else False
         
         # Get info on model data split
         json_path = os.path.join('masters/models/data_splits/', name + '.json')
         with open(json_path, 'r') as file:
             data = json.load(file)
         testing_folders = data['test']
-        original_dataset = get_her2test_dataset(testing_folders, batch_size, Inception=isInception, InceptionResnet=isInceptionResnet, Resnet=isResnet) # original data, testing subset for this model
+        original_dataset = get_her2test_dataset(testing_folders, batch_size, Inception=Inception, InceptionResnet=InceptionResnet) # original data, testing subset for this model
         n_samples=len(original_dataset)
-        # bootstrapping 1000 iterations
+        # bootstrapping 500 iterations
         for i in range(500):
-            # Get bootstrapped (sub)set of data
-            bootstrapped_dataset = create_bootstrapped_dataset(dataset, n_samples)
-            bootstrapped_dataloader = DataLoader(bootstrapped_dataset, batch_size=batch_size, num_workers=num_cpus, shuffle=False, drop_last=False)
-
-            # Test model
-            case_ids, true_labels, probabilities, predictions = test_model(model, bootstrapped_dataloader, device) 
-            # patch-level AUC for samples in bootstrapped set
-            auc_score = roc_auc_score(true_labels, model_predictions)
-            scores.append(auc_score)
+            if i%10==0:
+                print(f"Bootstrap iteration {i}")
+            print("Patch-level testing")
+            # patch-level testing
+            patch_auc = bootstrap_testing_patches(model, device, original_dataset, batch_size, num_cpus, n_samples)
+            scores.append(patch_auc)
+            print("Slide-level testing")
+            # slide-level testing
+            slide_auc = bootstrap_testing_slides(model, device, testing_folders, batch_size, num_cpus, Inception=Inception, InceptionResnet=InceptionResnet)
+            slide_scores.append(slide_auc)
             
-            # slide-level AUC
-            
+        # Patch level: check and save
+        if len(scores) != 500:
+            raise ValueError("Not enough patch AUC scores (<500)")
+        # all AUC scores for this model (for later inference)
+        patch_auc_scores = np.array(scores)
+        file_name = os.path.join('/home/21576262@su/masters/reports/bootstrapping', name + '_patch_auc_scores' + '.csv')
+        np.savetxt(file_name, patch_auc_scores, delimiter=",")
         
-        if len(scores) != 1000:
-            raise ValueError("Not enough AUC scores (<1000)")
-        # all 1000 AUC scores for this model (for later inference)
-        auc_scores = np.array(scores)
-        file_name = os.path.join('/home/21576262@su/masters/reports/bootstrapping', 'auc_scores_' + name + '.csv')
-        np.savetxt(file_name, auc_scores, delimiter=",")
+        # Slide level: check and save
+        if len(slide_scores) != 500:
+            raise ValueError("Not enough slide AUC scores (<500)")
+        # all AUC scores for this model (for later inference)
+        slide_auc_scores = np.array(slide_scores)
+        file_name = os.path.join('/home/21576262@su/masters/reports/bootstrapping', name + '_slide_auc_scores' + '.csv')
+        np.savetxt(file_name, slide_auc_scores, delimiter=",")
 
 def create_bootstrapped_dataset(dataset, n_samples):
     """
@@ -79,41 +93,70 @@ def create_bootstrapped_dataset(dataset, n_samples):
     """
     # Generate random indices with replacement
     indices = torch.randint(0, len(dataset), size=(n_samples,))
+    if len(indices) != len(dataset):
+        print("ERROR: not enough indices to sample image patches")
     # Subset the dataset with the generated indices
     bootstrapped_data = torch.utils.data.Subset(dataset, indices)
     return bootstrapped_data
 
-def create_bootstrapped_dataset_for_slides(testing_folders, batch_size, Inception=isInception, InceptionResnet=isInceptionResnet, Resnet=isResnet):
+def bootstrap_testing_patches(model, device, original_dataset, batch_size, num_cpus, n_samples):
+    # Get bootstrapped (sub)set of data
+    bootstrapped_dataset = create_bootstrapped_dataset(original_dataset, n_samples)
+    if len(bootstrapped_dataset) != n_samples:
+        print("ERROR: not enough patches in bootstrapped set")
+    bootstrapped_dataloader = data_utils.DataLoader(bootstrapped_dataset, batch_size=batch_size, num_workers=num_cpus, shuffle=False, drop_last=False)
+
+    # Test model
+    case_ids, true_labels, probabilities, predictions = test_model(model, bootstrapped_dataloader, device) 
+    # patch-level AUC for samples in bootstrapped set
+    predicted_probs = [probabilities[i][1] for i in range(len(probabilities))]
+    auc_score = roc_auc_score(true_labels, predicted_probs)
+    
+    return auc_score
+
+def bootstrap_testing_slides(model, device, testing_folders, batch_size, Inception=False, InceptionResnet=False):
     """
     Create a bootstrapped dataset by sampling with replacement.
-    Parameters:
-        dataset (Dataset): The original dataset.
-        n_samples (int): The number of samples in the bootstrapped dataset.
     Returns:
-        Dataset: A new dataset instance with bootstrapped data.
+        AUC score for bootstrapped dataset
     """
+    true_slide_labels = []
+    probs = []
     # Generate random indices with replacement
-    indices = torch.randint(0, len(dataset), size=(n_samples,))
-    # Subset from list of testing folders
-    bootstrapped_folders = testing_folders[indices]
+    indices = torch.randint(0, len(testing_folders), size=(n_samples,))
+    if len(indices) != len(testing_folders):
+        print("ERROR: not enough indices to sample slides")
     
+    # for each slide
+    for idx in indices:
+        # extract tiles from one slide and make dataset
+        dataset = get_her2test_dataset(testing_folders[idx], batch_size, Inception=isInception, InceptionResnet=isInceptionResnet, Resnet=isResnet)
+        dataloader = data_utils.DataLoader(dataset, batch_size=batch_size, num_workers=num_cpus, shuffle=False, drop_last=False)
+        # make predictions
+        case_ids, true_labels, probabilities, predictions = test_model(model, dataset, device)
+        predicted_probs = [probabilities[i][1] for i in range(len(probabilities))]
+        agg_probs = np.mean(predicted_probs)
+        # Checking status
+        if len(set(true_labels)) != 1:
+            raise ValueError(f"Tiles from case {case_ids[0]} are not all the same HER2 status ")
+        true_slide_labels.append(true_labels[0])
+        probs.append(agg_probs)   
     
-    return bootstrapped_data
+    auc_score = roc_auc_score(true_slide_labels, probs)    
+    
+    return auc_score
 
 def test_model(model, test_loader, device):
     
     correct = 0
     total = 0
-    
-    # Create a progress bar
-    progress_bar = tqdm(test_loader, desc='Testing', unit='batch')
 
     with torch.no_grad():
         true_labels = []
         predictions = []
         probabilities = []
         case_ids = []
-        for inputs, labels, cases in progress_bar:
+        for inputs, labels, cases in test_loader:
             # move to device
             inputs = inputs.to(device)
             labels = labels.to(device)
@@ -134,15 +177,10 @@ def test_model(model, test_loader, device):
 
             probabilities.extend(probs.tolist())
             predictions.extend(predicted.tolist())
-
-            # Update progress bar description
-            progress_bar.set_postfix({'Accuracy': '{:.2f}%'.format((correct / total) * 100)})
     
     # # Compute accuracy (testing for now) --delete
     accuracy = 100 * correct / total
     print('Test Accuracy: {:.2f}%'.format(accuracy))
-    # Close the progress bar
-    progress_bar.close()
     
     return case_ids, true_labels, probabilities, predictions
 

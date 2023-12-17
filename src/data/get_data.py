@@ -520,7 +520,6 @@ def get_her2test_dataloader(subfolders, batch_size, Inception=False, InceptionRe
     test_dataloader = data_utils.DataLoader(test_dataset, batch_size=batch_size, num_workers=num_cpus, shuffle=False, drop_last=False)
     return test_dataloader
 
-
 def get_her2test_dataset(subfolders, batch_size, Inception=False, InceptionResnet=False):
     '''
     Given list of subfolders, extract all patches in them and put into a test dataloader.
