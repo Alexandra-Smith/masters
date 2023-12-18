@@ -529,10 +529,14 @@ def get_her2test_dataset(subfolders, batch_size, Inception=False, InceptionResne
     STRIDE=PATCH_SIZE
     num_cpus=4
     main_dir = '/home/21576262@su/masters/data/patches/'
-    labels_dir = '/home/21576262@su/masters/data/labels/' 
+    labels_dir = '/home/21576262@su/masters/data/labels/'
+    
+    if isinstance(subfolders, str):
+        subfolders = [subfolders]  # Wrap a single string in a list
+        
     test_img_folders = [main_dir + case for case in subfolders]
     test_labels = [labels_dir + case + '.pt' for case in subfolders]
-    
+
     data_transforms = define_transforms(PATCH_SIZE, isInception=Inception, isInceptionResnet=InceptionResnet)
 
     test_dataset = HER2Dataset(test_img_folders, test_labels, transform=data_transforms['test'])

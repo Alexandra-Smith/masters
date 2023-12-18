@@ -31,7 +31,8 @@ def main():
     num_cpus=8
     
     # model_names = {'occult-newt-137': 'RESNET34', 'fresh-firefly-138': 'RESNET18', 'morning-glitter-146': 'RESNET50', 'glamorous-firefly-147': 'INCEPTIONv3', 'magic-frost-148': 'INCEPTIONv4', 'gallant-sea-150' : 'INCEPTIONRESNETv2'}
-    model_names = {'spring-pyramid-177': 'RESNET34'}
+    # model_names = {'spring-pyramid-177': 'RESNET34'}
+    model_names = {'spring-pyramid-177': 'RESNET34', 'trim-valley-173': 'INCEPTIONv4', 'drawn-serenity-176': 'INCEPTIONv3', 'dazzling-sea-175' : 'INCEPTIONRESNETv2'}
     
     results = []
     # Test each model
@@ -81,10 +82,8 @@ def main():
     # Convert the list of dictionaries to a pandas DataFrame
     df = pd.DataFrame(results)
     # Save to JSON
-    # df.to_json('masters/reports/results/stage2_all_results.json', orient='records')
+    df.to_json('masters/reports/results/stage2_final_patch_results.json', orient='records')
     
-    
-
 def test_model(model, test_loader, device):
     
     correct = 0

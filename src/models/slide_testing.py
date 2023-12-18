@@ -28,7 +28,7 @@ def main():
 
     PATCH_SIZE=256
     STRIDE=PATCH_SIZE
-    SEED=42
+    SEED=0
     num_cpus=8
     
     model_name = 'inceptionresnet'
@@ -39,9 +39,10 @@ def main():
     Inception = True if model_name == 'inception' else False
     InceptionResnet = True if model_name == 'inceptionresnet' else False
     
-    model_names = {'spring-pyramid-177': 'RESNET34'}
+    # model_names = {'spring-pyramid-177': 'RESNET34'}
+    model_names = {'spring-pyramid-177': 'RESNET34', 'trim-valley-173': 'INCEPTIONv4', 'drawn-serenity-176': 'INCEPTIONv3', 'dazzling-sea-175' : 'INCEPTIONRESNETv2'}
     
-    # results = []
+    results = []
     # Test each model
     for name in model_names.keys():
         print(f"Testing model: {name}")
@@ -124,43 +125,56 @@ def main():
 
         print(auc_score1)
         print(auc_score2)
+        
+        slide_model_results = {
+            'model_name': name,
+            'true_labels': true_labels,
+            'aggregated_slide_probs': avg_probs,
+            '%_tiles_classified_positive': positively_clasif,
+            'predicted_classes': predictions
+        }
+        results.append(slide_model_results)
+        
+    df = pd.DataFrame(results)
+    # Save to JSON
+    df.to_json('masters/reports/results/stage2_final_slide_results.json', orient='records')
 
-        # calculate roc curves
-        fpr1, tpr1, _ = roc_curve(true_labels, avg_probs)
-        fpr2, tpr2, _ = roc_curve(true_labels, positively_clasif)
-        # generate a no skill prediction (majority class)
-        ns_probs = [0 for _ in range(len(true_labels))]
-        ns_fpr, ns_tpr, _ = roc_curve(true_labels, ns_probs)
-        # plot the roc curve for the model
-        plt.plot(ns_fpr, ns_tpr, cd['green'], linestyle='--', label='No Skill')
-        plt.plot(fpr1, tpr1, cd['purple'], marker='.', label=f"Average predicted probability: {'{:.2f}'.format(auc_score1)}")
-        plt.plot(fpr2, tpr2, cd['yellow'], marker='.', label=f"Percentage postively classified: {'{:.2f}'.format(auc_score2)}")
-        # axis labels
-        plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
-        plt.legend()
-        # plt.title('AUC=%.3f' % (auc_score))
-        # plt.show()
-        plt.savefig("/home/21576262@su/masters/reports/results/" + name + '/roc_slide_level.png')
-        plt.clf()
+#         # calculate roc curves
+#         fpr1, tpr1, _ = roc_curve(true_labels, avg_probs)
+#         fpr2, tpr2, _ = roc_curve(true_labels, positively_clasif)
+#         # generate a no skill prediction (majority class)
+#         ns_probs = [0 for _ in range(len(true_labels))]
+#         ns_fpr, ns_tpr, _ = roc_curve(true_labels, ns_probs)
+#         # plot the roc curve for the model
+#         plt.plot(ns_fpr, ns_tpr, cd['green'], linestyle='--', label='No Skill')
+#         plt.plot(fpr1, tpr1, cd['purple'], marker='.', label=f"Average predicted probability: {'{:.2f}'.format(auc_score1)}")
+#         plt.plot(fpr2, tpr2, cd['yellow'], marker='.', label=f"Percentage postively classified: {'{:.2f}'.format(auc_score2)}")
+#         # axis labels
+#         plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
+#         plt.legend()
+#         # plt.title('AUC=%.3f' % (auc_score))
+#         # plt.show()
+#         plt.savefig("/home/21576262@su/masters/reports/results/" + name + '/roc_slide_level.png')
+#         plt.clf()
 
-        cm = confusion_matrix(true_labels, predictions)
-        group_counts = ['{0:0.0f}'.format(value) for value in cm.flatten()]
-        group_percentages = ['{0:.2%}'.format(value) for value in cm.flatten()/np.sum(cm)]
-        labels = [f"{v1}\n({v2})" for v1, v2 in zip(group_counts,group_percentages)]
-        labels = np.asarray(labels).reshape(2,2)
-        sns.heatmap(cm, annot=labels, fmt='', cmap=custom_grn)
-        # plt.title('Confusion Matrix');
-        plt.xlabel('Predicted Label')
-        plt.ylabel('True Label')
-        # disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-        # disp.plot(cmap='plasma', values_format='.0f')
-        # disp.plot(cmap='PuBuGn', values_format='.2%')
-        # plt.show()
-        plt.savefig("/home/21576262@su/masters/reports/results/" + name + '/cm_slide_level.png')
-        plt.clf()
+#         cm = confusion_matrix(true_labels, predictions)
+#         group_counts = ['{0:0.0f}'.format(value) for value in cm.flatten()]
+#         group_percentages = ['{0:.2%}'.format(value) for value in cm.flatten()/np.sum(cm)]
+#         labels = [f"{v1}\n({v2})" for v1, v2 in zip(group_counts,group_percentages)]
+#         labels = np.asarray(labels).reshape(2,2)
+#         sns.heatmap(cm, annot=labels, fmt='', cmap=custom_grn)
+#         # plt.title('Confusion Matrix');
+#         plt.xlabel('Predicted Label')
+#         plt.ylabel('True Label')
+#         # disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+#         # disp.plot(cmap='plasma', values_format='.0f')
+#         # disp.plot(cmap='PuBuGn', values_format='.2%')
+#         # plt.show()
+#         plt.savefig("/home/21576262@su/masters/reports/results/" + name + '/cm_slide_level.png')
+#         plt.clf()
 
-        report = metrics.classification_report(true_labels, predictions)
-        print(report)
+#         report = metrics.classification_report(true_labels, predictions)
+#         print(report)
 
 def load_trained_models(num_classes, model_path, model_architecture):
     

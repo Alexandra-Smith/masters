@@ -28,8 +28,8 @@ def main():
     num_cpus=8
     
     # model_names = {'occult-newt-137': 'RESNET34', 'fresh-firefly-138': 'RESNET18', 'morning-glitter-146': 'RESNET50', 'glamorous-firefly-147': 'INCEPTIONv3', 'magic-frost-148': 'INCEPTIONv4', '??' : 'INCEPTIONRESNETv2'}
-    model_names = {'spring-pyramid-177': 'RESNET34'}
-   # {'trim-valley-173': 'INCEPTIONv4', 'drawn-serenity-176': 'INCEPTIONv3', 'dazzling-sea-175' : 'INCEPTIONRESNETv2'}
+    model_names = {'trim-valley-173': 'INCEPTIONv4', 'drawn-serenity-176': 'INCEPTIONv3'}
+   # {spring-pyramid-177': 'RESNET34', 'trim-valley-173': 'INCEPTIONv4', 'drawn-serenity-176': 'INCEPTIONv3', 'dazzling-sea-175' : 'INCEPTIONRESNETv2'}
 
     # Test each model
     for name in model_names.keys():
@@ -55,16 +55,22 @@ def main():
         n_samples=len(original_dataset)
         # bootstrapping 500 iterations
         for i in range(500):
-            if i%10==0:
-                print(f"Bootstrap iteration {i}")
-            print("Patch-level testing")
             # patch-level testing
             patch_auc = bootstrap_testing_patches(model, device, original_dataset, batch_size, num_cpus, n_samples)
+            
             scores.append(patch_auc)
-            print("Slide-level testing")
             # slide-level testing
             slide_auc = bootstrap_testing_slides(model, device, testing_folders, batch_size, num_cpus, Inception=Inception, InceptionResnet=InceptionResnet)
             slide_scores.append(slide_auc)
+            
+            if i%10==0:
+                print("--------------------------")
+                print(f"Bootstrap iteration {i}")
+                print("--------------------------")
+                print("Patch-level testing")
+                print('Patch AUC: {:.2f}'.format(patch_auc))
+                print("\nSlide-level testing")
+                print('Slide AUC: {:.2f}'.format(slide_auc))
             
         # Patch level: check and save
         if len(scores) != 500:
@@ -114,7 +120,7 @@ def bootstrap_testing_patches(model, device, original_dataset, batch_size, num_c
     
     return auc_score
 
-def bootstrap_testing_slides(model, device, testing_folders, batch_size, Inception=False, InceptionResnet=False):
+def bootstrap_testing_slides(model, device, testing_folders, batch_size, num_cpus, Inception=False, InceptionResnet=False):
     """
     Create a bootstrapped dataset by sampling with replacement.
     Returns:
@@ -123,17 +129,17 @@ def bootstrap_testing_slides(model, device, testing_folders, batch_size, Incepti
     true_slide_labels = []
     probs = []
     # Generate random indices with replacement
-    indices = torch.randint(0, len(testing_folders), size=(n_samples,))
+    indices = torch.randint(0, len(testing_folders), size=(len(testing_folders),))
     if len(indices) != len(testing_folders):
         print("ERROR: not enough indices to sample slides")
     
     # for each slide
     for idx in indices:
         # extract tiles from one slide and make dataset
-        dataset = get_her2test_dataset(testing_folders[idx], batch_size, Inception=isInception, InceptionResnet=isInceptionResnet, Resnet=isResnet)
+        dataset = get_her2test_dataset(testing_folders[idx], batch_size, Inception=Inception, InceptionResnet=InceptionResnet)
         dataloader = data_utils.DataLoader(dataset, batch_size=batch_size, num_workers=num_cpus, shuffle=False, drop_last=False)
         # make predictions
-        case_ids, true_labels, probabilities, predictions = test_model(model, dataset, device)
+        case_ids, true_labels, probabilities, predictions = test_model(model, dataloader, device)
         predicted_probs = [probabilities[i][1] for i in range(len(probabilities))]
         agg_probs = np.mean(predicted_probs)
         # Checking status
@@ -179,8 +185,8 @@ def test_model(model, test_loader, device):
             predictions.extend(predicted.tolist())
     
     # # Compute accuracy (testing for now) --delete
-    accuracy = 100 * correct / total
-    print('Test Accuracy: {:.2f}%'.format(accuracy))
+    # accuracy = 100 * correct / total
+    # print('Test Accuracy: {:.2f}%'.format(accuracy))
     
     return case_ids, true_labels, probabilities, predictions
 
