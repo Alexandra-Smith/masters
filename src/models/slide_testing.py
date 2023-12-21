@@ -39,7 +39,7 @@ def main():
     Inception = True if model_name == 'inception' else False
     InceptionResnet = True if model_name == 'inceptionresnet' else False
     
-    # model_names = {'spring-pyramid-177': 'RESNET34'}
+    model_names = {'trim-valley-173': 'INCEPTIONv4'}
     model_names = {'spring-pyramid-177': 'RESNET34', 'trim-valley-173': 'INCEPTIONv4', 'drawn-serenity-176': 'INCEPTIONv3', 'dazzling-sea-175' : 'INCEPTIONRESNETv2'}
     
     results = []

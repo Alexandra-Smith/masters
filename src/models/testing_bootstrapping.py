@@ -28,7 +28,7 @@ def main():
     num_cpus=8
     
     # model_names = {'occult-newt-137': 'RESNET34', 'fresh-firefly-138': 'RESNET18', 'morning-glitter-146': 'RESNET50', 'glamorous-firefly-147': 'INCEPTIONv3', 'magic-frost-148': 'INCEPTIONv4', '??' : 'INCEPTIONRESNETv2'}
-    model_names = {'trim-valley-173': 'INCEPTIONv4', 'drawn-serenity-176': 'INCEPTIONv3'}
+    model_names = {'dazzling-sea-175' : 'INCEPTIONRESNETv2'}
    # {spring-pyramid-177': 'RESNET34', 'trim-valley-173': 'INCEPTIONv4', 'drawn-serenity-176': 'INCEPTIONv3', 'dazzling-sea-175' : 'INCEPTIONRESNETv2'}
 
     # Test each model
