@@ -11,6 +11,8 @@ This thesis introduces a deep learning framework for predicting HER2 status dire
 
 This research demonstrates the capability of deep learning models to accurately predict HER2 status directly from histopathological whole slide images, offering a more cost- and time-efficient method for identifying clinical biomarkers, with the potential to inform and accelerate the selection of breast cancer treatments.
 
+![Overview](system_overview.jpg)
+
 ### Results and Conclusion
 ------------
 
