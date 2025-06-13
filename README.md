@@ -2,6 +2,8 @@
 
 ## Title: The Use of Deep Learning to Predict HER2 Status in Breast Cancer Directly from Histopathology Slides.
 
+![Overview](system_overview.jpg)
+
 ### Abstract
 ------------
 
@@ -10,8 +12,6 @@ The treatment of breast cancer is significantly influenced by the identification
 This thesis introduces a deep learning framework for predicting HER2 status directly from the morphological features observed in histopathological slides. The proposed system has two stages: initially, a deep learning model is employed to differentiate between benign and malignant tissues in whole slide images, using annotated regions of invasive tumors. Following this, the effectiveness of Inception-v4 and Inception-ResNet-v2 architectures in biomarker status prediction is explored, comparing their performance against previous model architectures utilized for this task, namely Inception-v3 and ResNet34. The study utilizes a dataset comprising whole slide images from 147 patients, sourced from the publicly available Cancer Genome Atlas (TCGA). Models are trained using 256 × 256 patches extracted from these slides. The best-performing model, Inception-v4, achieved an area under the receiver operating characteristic curve (AUC) of 0.849 (95% confidence interval (CI): 0.845 ≠ 0.853) per-tile and 0.767 (CI: 0.556 ≠ 0.955) per-slide in the test set.
 
 This research demonstrates the capability of deep learning models to accurately predict HER2 status directly from histopathological whole slide images, offering a more cost- and time-efficient method for identifying clinical biomarkers, with the potential to inform and accelerate the selection of breast cancer treatments.
-
-![Overview](system_overview.jpg)
 
 ### Results and Conclusion
 ------------
