@@ -1,10 +1,7 @@
 ## Masters Thesis (MSc Applied Mathematics)
 
-## Title: The Use of Deep Learning to Predict HER2 Status in Breast Cancer Directly from Histopathology Slides.
-
-![Overview](system_overview.jpg)
-
 ## 🚧 Improvements To My Project
+------------
 
 If I were to revisit this codebase, I would implement the following improvements to enhance maintainability, reproducibility, and code quality:
 
@@ -26,6 +23,11 @@ If I were to revisit this codebase, I would implement the following improvements
 - **Improved Code Documentation**  
   Add more docstrings and type hints throughout the code to improve clarity and make scripts and functions more understandable.
 
+------------
+
+## Title: The Use of Deep Learning to Predict HER2 Status in Breast Cancer Directly from Histopathology Slides.
+
+![Overview](system_overview.jpg)
 
 ### Abstract
 ------------
