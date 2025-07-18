@@ -4,6 +4,29 @@
 
 ![Overview](system_overview.jpg)
 
+## 🚧 Improvements To My Project
+
+If I were to revisit this codebase, I would implement the following improvements to enhance maintainability, reproducibility, and code quality:
+
+- **Configuration Management with Hydra**  
+  Use Hydra to manage configurations such as hyperparameters and file paths through structured YAML config files, rather than hardcoding them inside my scripts, to improve flexibility, experiment tracking, and reproducibility.
+
+- **Modular Code Structure**  
+  Refactor my scripts to make it more modular, maintaing a problem organisation system for data loading, models, training, and evaluation, and to remove any duplication of scripts. This is needed to improve readability and reusability of this system.
+
+- **Use of a Makefile**  
+  Add a `Makefile` to streamline and document common tasks such as training and testing— making the project easier to use and automate.
+
+- **Pre-commit Hooks**  
+  Set up pre-commit hooks for automatic formatting and linting when committing, to enforce consistent code style and catch issues before commits.
+
+- **Conventional Commits**  
+  Follow the Conventional Commits standard to make commit history more informative and useful for myself and others.
+
+- **Improved Code Documentation**  
+  Add more docstrings and type hints throughout the code to improve clarity and make scripts and functions more understandable.
+
+
 ### Abstract
 ------------
 
