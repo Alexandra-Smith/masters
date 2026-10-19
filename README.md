@@ -9,7 +9,7 @@ If I were to revisit this codebase, I would implement the following improvements
   Use Hydra to manage configurations such as hyperparameters and file paths through structured YAML config files, rather than hardcoding them inside my scripts, to improve flexibility, experiment tracking, and reproducibility.
 
 - **Modular Code Structure**  
-  Refactor my scripts to make it more modular, maintaing a problem organisation system for data loading, models, training, and evaluation, and to remove any duplication of scripts. This is needed to improve readability and reusability of this system.
+  Refactor my scripts to make it more modular, maintaining a organisation system for data loading, models, training, and evaluation, and to remove any duplication of scripts. This is needed to improve readability and reusability of this system.
 
 - **Use of a Makefile**  
   Add a `Makefile` to streamline and document common tasks such as training and testing— making the project easier to use and automate.
