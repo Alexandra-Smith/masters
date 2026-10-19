@@ -12,13 +12,13 @@ If I were to revisit this codebase, I would implement the following improvements
   Refactor my scripts to make it more modular, maintaining a organisation system for data loading, models, training, and evaluation, and to remove any duplication of scripts. This is needed to improve readability and reusability of this system.
 
 - **Use of a Makefile**  
-  Add a `Makefile` to streamline and document common tasks such as training and testing— making the project easier to use and automate.
+  Add a `Makefile` to streamline and document common tasks such as training and testing, to make the project easier to use and automate.
 
 - **Pre-commit Hooks**  
   Set up pre-commit hooks for automatic formatting and linting when committing, to enforce consistent code style and catch issues before commits.
 
 - **Conventional Commits**  
-  Follow the Conventional Commits standard to make commit history more informative and useful for myself and others.
+  Follow the Conventional Commits standard to make commit history more informative and useful for myself and others when reviewing project history.
 
 - **Improved Code Documentation**  
   Add more docstrings and type hints throughout the code to improve clarity and make scripts and functions more understandable.
